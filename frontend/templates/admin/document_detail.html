@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ doc.title }} — Admin</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+<div class="admin-layout">
+
+  <aside class="admin-sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-logo">
+        <div class="sidebar-brand-icon" style="font-weight:900;font-size:1rem;">A</div>
+        <span class="sidebar-brand-name">Agrobank</span>
+      </div>
+      <div class="sidebar-brand-desc">ACK System</div>
+    </div>
+    <nav class="admin-nav">
+      <div class="admin-nav-section" data-i18n="admin_management">Boshqaruv</div>
+      <a href="/admin/" class="active">📋 <span data-i18n="admin_documents">Hujjatlar</span></a>
+      <a href="/admin/upload">📤 <span data-i18n="admin_upload">Yuklash</span></a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar">{{ admin_user[0]|upper }}</div>
+      <span class="sidebar-user-name">{{ admin_user }}</span>
+      <a href="/admin/logout" class="sidebar-logout" data-i18n="admin_logout">Chiqish</a>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <!-- Topbar -->
+    <div class="admin-topbar">
+      <div style="display:flex;align-items:center;gap:.85rem;">
+        <a href="/admin/" class="back-btn" data-i18n-title="admin_back">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 3L5 8l5 5"/>
+          </svg>
+        </a>
+        <div>
+          <div style="font-size:.72rem;color:var(--gray-400);font-weight:500;letter-spacing:.04em;text-transform:uppercase;" data-i18n="admin_documents">Hujjatlar</div>
+          <h1 style="margin-top:.1rem;line-height:1.2;">{{ doc.title }}</h1>
+        </div>
+      </div>
+      <div class="admin-topbar-actions">
+        <button class="lang-toggle lang-toggle-light">RU</button>
+        <a href="/admin/documents/{{ doc.id }}/file" target="_blank" class="btn btn-ghost btn-sm">
+          👁 <span data-i18n="admin_view_file">Ko'rish</span>
+        </a>
+        <a href="/admin/documents/{{ doc.id }}/export/csv?{% if filter_status %}status={{ filter_status }}&{% endif %}{% if filter_department %}department={{ filter_department }}{% endif %}"
+           class="btn btn-ghost btn-sm" data-i18n="admin_export_csv">⬇ CSV</a>
+        <a href="/admin/documents/{{ doc.id }}/export/excel?{% if filter_status %}status={{ filter_status }}&{% endif %}{% if filter_department %}department={{ filter_department }}{% endif %}"
+           class="btn btn-primary btn-sm" data-i18n="admin_export_excel">⬇ Excel</a>
+      </div>
+    </div>
+
+    <div class="admin-content">
+
+      <!-- Share link -->
+      <div class="share-link-box" style="margin-bottom:1.25rem;">
+        <span style="font-size:.72rem;color:var(--green-700);font-weight:700;white-space:nowrap;" data-i18n="share_link">Havola</span>
+        <input class="share-link-input" type="text" readonly
+               value="{{ request.base_url }}d/{{ doc.share_token }}" />
+        <button class="btn btn-outline btn-sm btn-copy-link"
+                data-url="{{ request.base_url }}d/{{ doc.share_token }}">
+          🔗 <span data-i18n="copy_link">Nusxa</span>
+        </button>
+      </div>
+
+      <!-- Filter -->
+      <form method="GET" action="/admin/documents/{{ doc.id }}">
+        <div class="filter-bar">
+          <select name="status" class="auto-submit-select">
+            <option value="" {% if not filter_status %}selected{% endif %} data-i18n="admin_all_statuses">Barcha holatlar</option>
+            {% for s in ack_statuses %}
+            <option value="{{ s.value }}" {% if filter_status == s.value %}selected{% endif %}>
+              {{ s.value }}
+            </option>
+            {% endfor %}
+          </select>
+          <select name="department" class="auto-submit-select">
+            <option value="" {% if not filter_department %}selected{% endif %} data-i18n="admin_all_depts">Barcha bo'limlar</option>
+            {% for dept in departments %}
+            <option value="{{ dept }}" {% if filter_department == dept %}selected{% endif %}>{{ dept }}</option>
+            {% endfor %}
+          </select>
+          <a href="/admin/documents/{{ doc.id }}" class="btn btn-ghost btn-sm" data-i18n="admin_reset">Tozalash</a>
+        </div>
+      </form>
+
+      <!-- Logs table -->
+      <div class="table-card">
+        <div class="table-header">
+          <h2>
+            <span data-i18n="admin_documents">Hujjatlar</span> —
+            <span style="color:var(--green-700);">{{ logs | length }}</span>
+            <span data-i18n="admin_records">ta yozuv</span>
+          </h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th data-i18n="admin_name">Ism</th>
+                <th data-i18n="admin_dept">Bo'lim</th>
+                <th data-i18n="admin_status">Holat</th>
+                <th data-i18n="admin_opened">Ochildi</th>
+                <th data-i18n="admin_confirmed">Tasdiqlandi</th>
+                <th data-i18n="admin_acknowledged">Tanishib chiqdi</th>
+                <th>IP</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for log in logs %}
+              <tr>
+                <td>
+                  <div style="font-weight:600;font-size:.875rem;">{{ log.full_name or "—" }}</div>
+                  <div style="font-size:.75rem;color:var(--gray-400);">{{ log.ad_username or "anonymous" }}</div>
+                </td>
+                <td style="font-size:.85rem;color:var(--gray-700);">{{ log.department or "—" }}</td>
+                <td>
+                  {% if log.status.value == "ACKNOWLEDGED" %}
+                    <span class="badge badge-green">
+                      <span class="uz-text">Tanishib chiqdi</span>
+                      <span class="ru-text" style="display:none;">Ознакомился</span>
+                    </span>
+                  {% elif log.status.value == "CONFIRMED" %}
+                    <span class="badge badge-blue">
+                      <span class="uz-text">Tasdiqlandi</span>
+                      <span class="ru-text" style="display:none;">Подтверждён</span>
+                    </span>
+                  {% elif log.status.value == "IDENTIFIED_NOT_CONFIRMED" %}
+                    <span class="badge badge-warning">
+                      <span class="uz-text">Tasdiqlanmadi</span>
+                      <span class="ru-text" style="display:none;">Не подтверждён</span>
+                    </span>
+                  {% else %}
+                    <span class="badge badge-gray">
+                      <span class="uz-text">Anonim</span>
+                      <span class="ru-text" style="display:none;">Анонимно</span>
+                    </span>
+                  {% endif %}
+                </td>
+                <td style="font-size:.8rem;white-space:nowrap;color:var(--gray-600);">
+                  {% if log.opened_at %}{{ log.opened_at.strftime("%Y-%m-%d %H:%M") }}{% else %}—{% endif %}
+                </td>
+                <td style="font-size:.8rem;white-space:nowrap;color:var(--gray-600);">
+                  {% if log.confirmed_at %}{{ log.confirmed_at.strftime("%Y-%m-%d %H:%M") }}{% else %}—{% endif %}
+                </td>
+                <td style="font-size:.8rem;white-space:nowrap;">
+                  {% if log.acknowledged_at %}
+                    <span style="color:var(--green-700);font-weight:600;">{{ log.acknowledged_at.strftime("%Y-%m-%d %H:%M") }}</span>
+                  {% else %}—{% endif %}
+                </td>
+                <td style="font-size:.78rem;color:var(--gray-400);">{{ log.ip_address or "—" }}</td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="7" style="text-align:center;padding:3rem;color:var(--gray-400);" data-i18n="admin_no_records">
+                  Yozuvlar topilmadi
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="/static/js/i18n.js"></script>
+<script src="/static/js/admin.js"></script>
+<script>
+  function syncStatusLang() {
+    const lang = I18n.getLang();
+    document.querySelectorAll('.uz-text').forEach(el => el.style.display = lang === 'uz' ? '' : 'none');
+    document.querySelectorAll('.ru-text').forEach(el => el.style.display = lang === 'ru' ? '' : 'none');
+  }
+  document.addEventListener('DOMContentLoaded', syncStatusLang);
+  document.querySelectorAll('.lang-toggle').forEach(btn =>
+    btn.addEventListener('click', () => setTimeout(syncStatusLang, 0))
+  );
+</script>
+</body>
+</html>

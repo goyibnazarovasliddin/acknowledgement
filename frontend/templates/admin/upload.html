@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hujjat yuklash — Admin</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-logo">
+        <div class="sidebar-brand-icon" style="font-weight:900;font-size:1rem;">A</div>
+        <span class="sidebar-brand-name">Agrobank</span>
+      </div>
+      <div class="sidebar-brand-desc">ACK System</div>
+    </div>
+    <nav class="admin-nav">
+      <div class="admin-nav-section" data-i18n="admin_management">Boshqaruv</div>
+      <a href="/admin/">📋 <span data-i18n="admin_documents">Hujjatlar</span></a>
+      <a href="/admin/upload" class="active">📤 <span data-i18n="admin_upload">Yuklash</span></a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar">{{ admin_user[0]|upper }}</div>
+      <span class="sidebar-user-name">{{ admin_user }}</span>
+      <a href="/admin/logout" class="sidebar-logout" data-i18n="admin_logout">Chiqish</a>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1 data-i18n="admin_upload_title">Hujjat yuklash</h1>
+      <div class="admin-topbar-actions">
+        <button class="lang-toggle lang-toggle-light">RU</button>
+      </div>
+    </div>
+    <div class="admin-content">
+      <div style="max-width:520px;">
+        <div class="table-card" style="padding:2rem;">
+          <form method="POST" action="/admin/upload" enctype="multipart/form-data">
+            <div class="form-group">
+              <label class="form-label" data-i18n="admin_upload_label">Sarlavha</label>
+              <input type="text" name="title" class="form-input" placeholder="Hujjat nomi..." required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" data-i18n="admin_upload_file">Fayl</label>
+              <input type="file" name="file" class="form-input" style="padding:.5rem;" required />
+              <div class="form-hint" data-i18n="admin_upload_hint">PDF, Word, Excel, rasm va boshqa formatlar</div>
+            </div>
+            <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
+              <a href="/admin/" class="btn btn-ghost" data-i18n="admin_back">← Orqaga</a>
+              <button type="submit" class="btn btn-primary" style="flex:1;" data-i18n="admin_upload_btn">Yuklash →</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="/static/js/i18n.js"></script>
+</body>
+</html>

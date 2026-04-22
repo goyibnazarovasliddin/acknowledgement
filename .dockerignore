@@ -1,0 +1,13 @@
+.env
+backend/.env
+**/__pycache__
+**/*.pyc
+**/*.pyo
+*.db
+*.sqlite3
+certs/
+.git/
+.gitignore
+README.md
+DEPLOYMENT.md
+test_ldap.py

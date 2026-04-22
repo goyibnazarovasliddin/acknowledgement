@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin kirish — Agrobank</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+<div class="login-wrap">
+
+  <!-- Left branding -->
+  <div class="login-left">
+    <div class="login-brand-icon" style="font-size:2.5rem;font-weight:900;font-family:serif;">A</div>
+    <div class="login-brand-title">Agrobank</div>
+    <div class="login-brand-sub">Hujjat tasdiqlash tizimi</div>
+    <div style="margin-top:3rem;opacity:.45;font-size:.8rem;max-width:260px;text-align:center;">
+      Document Acknowledgement System — Admin Panel
+    </div>
+  </div>
+
+  <!-- Right form -->
+  <div class="login-right">
+    <div style="width:100%;max-width:340px;">
+
+      <!-- Header with lang toggle -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;">
+        <div style="display:flex;align-items:center;gap:.6rem;">
+          <div style="width:34px;height:34px;background:linear-gradient(135deg,var(--green-700),var(--green-500));border-radius:.45rem;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:1.1rem;">A</div>
+          <div>
+            <div style="font-weight:800;font-size:1rem;" data-i18n="login_title">Admin Panel</div>
+            <div style="font-size:.75rem;color:var(--gray-600);" data-i18n="login_sub">Agrobank ACK tizimi</div>
+          </div>
+        </div>
+        <button class="lang-toggle lang-toggle-light">RU</button>
+      </div>
+
+      {% if error %}
+      <div class="login-error">⚠ <span data-i18n="login_error">Login yoki parol noto'g'ri</span></div>
+      {% endif %}
+
+      <form method="POST" action="/admin/login" class="login-form">
+        <div class="form-group">
+          <label class="form-label" data-i18n="login_username">Login</label>
+          <input type="text" name="username" class="form-input" placeholder="admin" autocomplete="username" required autofocus />
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="login_password">Parol</label>
+          <input type="password" name="password" class="form-input" placeholder="••••••••" autocomplete="current-password" required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full btn-lg" style="margin-top:.5rem;" data-i18n="login_btn">
+          Kirish →
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+<script src="/static/js/i18n.js"></script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Shaxsni tasdiqlash — Agrobank{% endblock %}
+{% block body %}
+<div class="center-page">
+  <div class="card" style="max-width:440px;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;">
+      <div style="display:flex;align-items:center;gap:.6rem;">
+        <div style="width:34px;height:34px;background:linear-gradient(135deg,var(--green-700),var(--green-500));border-radius:.45rem;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:1.05rem;">A</div>
+        <div>
+          <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green-700);">Agrobank</div>
+          <div style="font-size:.78rem;color:var(--gray-600);margin-top:.05rem;">{{ doc.title }}</div>
+        </div>
+      </div>
+      <button class="lang-toggle lang-toggle-light">RU</button>
+    </div>
+
+    {% if decline_attempt %}
+    <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:.5rem;padding:.75rem 1rem;margin-bottom:1.25rem;font-size:.85rem;color:#92400e;display:flex;align-items:center;gap:.5rem;">
+      ⚠
+      <span>
+        <span class="uz-text">Urinish {{ decline_attempt }} / {{ max_attempts }}. Ma'lumotlar AD dan qayta tekshirildi.</span>
+        <span class="ru-text" style="display:none;">Попытка {{ decline_attempt }} / {{ max_attempts }}. Данные повторно проверены из AD.</span>
+      </span>
+    </div>
+    {% endif %}
+
+    <div style="text-align:center;margin-bottom:1.25rem;">
+      <h2 style="font-size:1.25rem;font-weight:800;" data-i18n="confirm_title">Shaxsingizni tasdiqlang</h2>
+    </div>
+
+    <p style="font-size:.875rem;color:var(--gray-600);margin-bottom:1rem;text-align:center;" data-i18n="confirm_subtitle">
+      Quyidagi ma'lumotlar to'g'rimi?
+    </p>
+
+    <div class="info-card">
+      <div class="info-row">
+        <span class="info-label" data-i18n="field_name">Ism Familiya</span>
+        <span class="info-value">{{ user.full_name }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label" data-i18n="field_dept">Bo'lim</span>
+        <span class="info-value">{{ user.department or "—" }}</span>
+      </div>
+    </div>
+
+    <form method="POST" action="/d/{{ doc.share_token }}/confirm">
+      <button type="submit" class="btn btn-success btn-full btn-lg" style="margin-bottom:.75rem;">
+        ✓ <span data-i18n="btn_confirm">Ha, bu men</span>
+      </button>
+    </form>
+
+    <form method="POST" action="/d/{{ doc.share_token }}/decline">
+      <button type="submit" class="btn btn-ghost btn-full" data-i18n="btn_decline">
+        Yo'q, bu men emas
+      </button>
+    </form>
+
+  </div>
+</div>
+<script>
+  function syncLang() {
+    const lang = (typeof I18n !== 'undefined') ? I18n.getLang() : 'uz';
+    document.querySelectorAll('.uz-text').forEach(el => el.style.display = lang === 'uz' ? '' : 'none');
+    document.querySelectorAll('.ru-text').forEach(el => el.style.display = lang === 'ru' ? '' : 'none');
+  }
+  document.addEventListener('DOMContentLoaded', syncLang);
+  document.querySelectorAll('.lang-toggle').forEach(b => b.addEventListener('click', () => setTimeout(syncLang, 0)));
+</script>
+{% endblock %}

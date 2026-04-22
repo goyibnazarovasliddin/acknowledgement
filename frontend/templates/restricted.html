@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Kirish cheklangan — Agrobank{% endblock %}
+{% block body %}
+<div class="center-page">
+  <div class="card" style="max-width:420px;text-align:center;">
+
+    <!-- Header row with lang toggle -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <div style="display:flex;align-items:center;gap:.5rem;">
+        <div style="width:30px;height:30px;background:linear-gradient(135deg,var(--green-700),var(--green-500));border-radius:.4rem;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:.95rem;">A</div>
+        <span style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green-700);">Agrobank</span>
+      </div>
+      <button class="lang-toggle lang-toggle-light">RU</button>
+    </div>
+
+    <div class="lock-icon">🔒</div>
+    <h2 style="font-size:1.2rem;font-weight:800;margin-bottom:.6rem;" data-i18n="restricted_title">Kirish cheklangan</h2>
+    <p style="color:var(--gray-600);font-size:.9rem;line-height:1.6;" data-i18n="restricted_msg">
+      Tizim sizni aniqlay olmadi. Iltimos, korporativ tarmoq orqali kiring.
+    </p>
+    <hr class="divider" style="margin:1.5rem 0;" />
+    <p style="font-size:.78rem;color:var(--gray-400);">{{ doc.title }}</p>
+  </div>
+</div>
+{% endblock %}

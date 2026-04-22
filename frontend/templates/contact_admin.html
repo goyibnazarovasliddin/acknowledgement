@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Admin bilan bog'laning — Agrobank{% endblock %}
+{% block body %}
+<div class="center-page">
+  <div class="card" style="max-width:440px;text-align:center;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;">
+      <div style="display:flex;align-items:center;gap:.6rem;">
+        <div style="width:30px;height:30px;background:linear-gradient(135deg,var(--green-700),var(--green-500));border-radius:.4rem;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:.95rem;">A</div>
+        <span style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green-700);">Agrobank</span>
+      </div>
+      <button class="lang-toggle lang-toggle-light">RU</button>
+    </div>
+
+    <!-- Icon -->
+    <div style="width:72px;height:72px;background:#fef3c7;border:2px solid #fcd34d;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-size:2rem;">⚠️</div>
+
+    <h2 style="font-size:1.2rem;font-weight:800;margin-bottom:.6rem;">
+      <span class="uz-text">Shaxsingizni tasdiqlab bo'lmadi</span>
+      <span class="ru-text" style="display:none;">Не удалось подтвердить личность</span>
+    </h2>
+
+    <p style="font-size:.9rem;color:var(--gray-600);line-height:1.65;margin-bottom:1.5rem;">
+      <span class="uz-text">Siz {{ attempts }} marta rad etdingiz. Tizim sizni aniqlay olmadi. Iltimos, administrator bilan bog'laning.</span>
+      <span class="ru-text" style="display:none;">Вы отклонили {{ attempts }} раз(а). Система не смогла подтвердить вашу личность. Обратитесь к администратору.</span>
+    </p>
+
+    <!-- Admin contact card -->
+    <div style="background:var(--green-50);border:1.5px solid var(--green-100);border-radius:.625rem;padding:1.1rem 1.25rem;text-align:left;">
+      <div style="font-size:.7rem;color:var(--green-700);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.5rem;">
+        <span class="uz-text">Administrator</span>
+        <span class="ru-text" style="display:none;">Администратор</span>
+      </div>
+      <a href="mailto:{{ admin_email }}"
+         style="display:flex;align-items:center;gap:.6rem;color:var(--green-800);text-decoration:none;font-weight:600;font-size:.95rem;">
+        <span style="font-size:1.1rem;">✉</span>
+        {{ admin_email }}
+      </a>
+    </div>
+
+    <hr class="divider" />
+    <p style="font-size:.78rem;color:var(--gray-400);">{{ doc.title }}</p>
+
+  </div>
+</div>
+<script>
+  function syncLang() {
+    const lang = (typeof I18n !== 'undefined') ? I18n.getLang() : 'uz';
+    document.querySelectorAll('.uz-text').forEach(el => el.style.display = lang === 'uz' ? '' : 'none');
+    document.querySelectorAll('.ru-text').forEach(el => el.style.display = lang === 'ru' ? '' : 'none');
+  }
+  document.addEventListener('DOMContentLoaded', syncLang);
+  document.querySelectorAll('.lang-toggle').forEach(b => b.addEventListener('click', () => setTimeout(syncLang, 0)));
+</script>
+{% endblock %}

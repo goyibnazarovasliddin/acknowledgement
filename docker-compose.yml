@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+      LDAP_SERVER: ${LDAP_SERVER}
+      LDAP_BIND_DN: ${LDAP_BIND_DN}
+      LDAP_PASSWORD: ${LDAP_PASSWORD}
+      LDAP_BASE_DN: ${LDAP_BASE_DN}
+      SECRET_KEY: ${SECRET_KEY}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_SESSION_HOURS: ${ADMIN_SESSION_HOURS:-8}
+      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-100}
+      MAX_DECLINE_ATTEMPTS: ${MAX_DECLINE_ATTEMPTS:-3}
+      SCROLL_THRESHOLD: ${SCROLL_THRESHOLD:-0.90}
+      MIN_VIEW_SECONDS: ${MIN_VIEW_SECONDS:-20}
+      DEV_MODE: "false"
+    volumes:
+      - uploads_data:/app/backend/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - app
+    networks:
+      - internal
+
+volumes:
+  pg_data:
+  uploads_data:
+
+networks:
+  internal:

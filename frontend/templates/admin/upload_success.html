@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <title>Yuklandi — Admin</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-logo">
+        <div class="sidebar-brand-icon" style="font-weight:900;font-size:1rem;">A</div>
+        <span class="sidebar-brand-name">Agrobank</span>
+      </div>
+      <div class="sidebar-brand-desc">ACK System</div>
+    </div>
+    <nav class="admin-nav">
+      <div class="admin-nav-section" data-i18n="admin_management">Boshqaruv</div>
+      <a href="/admin/">📋 <span data-i18n="admin_documents">Hujjatlar</span></a>
+      <a href="/admin/upload" class="active">📤 <span data-i18n="admin_upload">Yuklash</span></a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar">{{ admin_user[0]|upper }}</div>
+      <span class="sidebar-user-name">{{ admin_user }}</span>
+      <a href="/admin/logout" class="sidebar-logout" data-i18n="admin_logout">Chiqish</a>
+    </div>
+  </aside>
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1 data-i18n="admin_uploaded_ok">Hujjat yuklandi</h1>
+      <div class="admin-topbar-actions">
+        <button class="lang-toggle lang-toggle-light">RU</button>
+      </div>
+    </div>
+    <div class="admin-content">
+      <div style="max-width:520px;">
+        <div class="table-card" style="padding:2rem;text-align:center;">
+          <div class="success-icon" style="width:64px;height:64px;font-size:1.75rem;margin-bottom:1.25rem;">✓</div>
+          <h2 style="font-weight:700;margin-bottom:.4rem;" data-i18n="admin_uploaded_ok">Hujjat yuklandi!</h2>
+          <p style="color:var(--gray-600);font-size:.875rem;margin-bottom:1.5rem;">{{ doc.title }}</p>
+
+          <div class="share-link-box">
+            <span style="font-size:.72rem;color:var(--green-700);font-weight:700;white-space:nowrap;" data-i18n="share_link">Havola</span>
+            <input class="share-link-input" type="text" readonly
+                   value="{{ request.base_url }}d/{{ doc.share_token }}" />
+            <button class="btn btn-outline btn-sm btn-copy-link"
+                    data-url="{{ request.base_url }}d/{{ doc.share_token }}">
+              🔗 <span data-i18n="copy_link">Nusxa</span>
+            </button>
+          </div>
+
+          <div style="display:flex;gap:.75rem;justify-content:center;">
+            <a href="/admin/" class="btn btn-ghost" data-i18n="admin_documents">← Hujjatlar</a>
+            <a href="/admin/documents/{{ doc.id }}/file" target="_blank" class="btn btn-ghost">
+              👁 <span data-i18n="admin_view_file">Ko'rish</span>
+            </a>
+            <a href="/admin/upload" class="btn btn-primary" data-i18n="admin_upload_again">Yana yuklash</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="/static/js/i18n.js"></script>
+<script src="/static/js/admin.js"></script>
+</body>
+</html>

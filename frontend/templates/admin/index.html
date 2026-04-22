@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Agrobank ACK</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+<div class="admin-layout">
+
+  <aside class="admin-sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-logo">
+        <div class="sidebar-brand-icon" style="font-weight:900;font-size:1rem;">A</div>
+        <span class="sidebar-brand-name">Agrobank</span>
+      </div>
+      <div class="sidebar-brand-desc">ACK System</div>
+    </div>
+    <nav class="admin-nav">
+      <div class="admin-nav-section" data-i18n="admin_management">Boshqaruv</div>
+      <a href="/admin/" class="active">📋 <span data-i18n="admin_documents">Hujjatlar</span></a>
+      <a href="/admin/upload">📤 <span data-i18n="admin_upload">Yuklash</span></a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar">{{ admin_user[0]|upper }}</div>
+      <span class="sidebar-user-name">{{ admin_user }}</span>
+      <a href="/admin/logout" class="sidebar-logout" data-i18n="admin_logout">Chiqish</a>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <!-- Topbar with lang toggle -->
+    <div class="admin-topbar">
+      <h1 data-i18n="admin_documents">Hujjatlar</h1>
+      <div class="admin-topbar-actions">
+        <button class="lang-toggle lang-toggle-light">RU</button>
+        <a href="/admin/upload" class="btn btn-primary btn-sm">+ <span data-i18n="admin_upload">Yuklash</span></a>
+      </div>
+    </div>
+
+    <div class="admin-content">
+
+      <!-- Stats -->
+      {% set total_docs  = doc_stats | length %}
+      {% set total_ack   = doc_stats | sum(attribute='ack_count') %}
+      {% set total_users = doc_stats | sum(attribute='total_count') %}
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-card-label" data-i18n="admin_stats_total">Jami hujjatlar</span>
+          <span class="stat-card-value">{{ total_docs }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card-label" data-i18n="admin_stats_ack">Tanishib chiqqanlar</span>
+          <span class="stat-card-value" style="color:var(--green-600);">{{ total_ack }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card-label" data-i18n="admin_stats_users">Jami foydalanuvchilar</span>
+          <span class="stat-card-value">{{ total_users }}</span>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-card">
+        <div class="table-header">
+          <h2 data-i18n="admin_doc_list">Hujjatlar ro'yxati</h2>
+        </div>
+        {% if doc_stats %}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th data-i18n="admin_title_col">Sarlavha</th>
+                <th data-i18n="admin_file">Fayl</th>
+                <th data-i18n="admin_uploaded">Yuklangan</th>
+                <th data-i18n="admin_stats_ack">Tanishib chiqdi</th>
+                <th data-i18n="admin_view_file">Ko'rish</th>
+                <th data-i18n="share_link">Havola</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for item in doc_stats %}
+              <tr>
+                <td style="color:var(--gray-400);font-size:.78rem;">{{ item.doc.id }}</td>
+                <td>
+                  <a href="/admin/documents/{{ item.doc.id }}" style="font-weight:600;color:var(--green-700);text-decoration:none;">
+                    {{ item.doc.title }}
+                  </a>
+                </td>
+                <td style="font-size:.8rem;color:var(--gray-600);">{{ item.doc.original_filename }}</td>
+                <td style="font-size:.82rem;white-space:nowrap;color:var(--gray-600);">{{ item.doc.uploaded_at.strftime("%Y-%m-%d") }}</td>
+                <td>
+                  <span class="badge {% if item.ack_count > 0 %}badge-green{% else %}badge-gray{% endif %}">
+                    {{ item.ack_count }} / {{ item.total_count }}
+                  </span>
+                </td>
+                <td>
+                  <a href="/admin/documents/{{ item.doc.id }}/file" target="_blank"
+                     class="btn btn-ghost btn-sm">👁 <span data-i18n="admin_view_file">Ko'rish</span></a>
+                </td>
+                <td>
+                  {% set link = request.base_url ~ "d/" ~ item.doc.share_token %}
+                  <button class="btn btn-outline btn-sm btn-copy-link" data-url="{{ link }}">
+                    🔗 <span data-i18n="copy_link">Nusxa</span>
+                  </button>
+                </td>
+                <td>
+                  <button class="btn btn-danger btn-sm btn-delete-doc" data-doc-id="{{ item.doc.id }}">✕</button>
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div style="padding:3rem;text-align:center;color:var(--gray-600);">
+          <div style="font-size:2rem;margin-bottom:.75rem;">📂</div>
+          <p data-i18n="admin_no_docs">Hujjatlar mavjud emas.</p>
+          <a href="/admin/upload" class="btn btn-primary btn-sm" style="margin-top:1rem;" data-i18n="admin_upload">Yuklash</a>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="/static/js/i18n.js"></script>
+<script src="/static/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Rahmat — Agrobank{% endblock %}
+{% block body %}
+<div class="center-page">
+  <div class="card" style="max-width:440px;text-align:center;">
+
+    <!-- Header row -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;">
+      <div style="display:flex;align-items:center;gap:.6rem;">
+        <div style="width:30px;height:30px;background:linear-gradient(135deg,var(--green-700),var(--green-500));border-radius:.4rem;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:.95rem;">A</div>
+        <span style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green-700);">Agrobank</span>
+      </div>
+      <button class="lang-toggle lang-toggle-light">RU</button>
+    </div>
+
+    <div class="success-icon">✓</div>
+
+    <h2 style="font-size:1.6rem;font-weight:800;margin-bottom:.5rem;" data-i18n="final_title">Rahmat!</h2>
+    <p style="font-size:1rem;color:var(--gray-700);margin-bottom:.4rem;" data-i18n="final_msg">
+      Vaqt ajratganingiz uchun rahmat!
+    </p>
+    <p style="font-size:.875rem;color:var(--gray-600);" data-i18n="final_sub">
+      Hujjat bilan tanishganingiz qayd etildi.
+    </p>
+
+    <hr class="divider" />
+
+    <div style="background:var(--green-50);border:1px solid var(--green-100);border-radius:.625rem;padding:1rem;text-align:left;">
+      <div style="font-size:.72rem;color:var(--green-700);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;" data-i18n="final_info">Ma'lumot</div>
+      <div style="font-size:.875rem;font-weight:600;margin-bottom:.2rem;">{{ doc.title }}</div>
+      {% if user %}
+      <div style="font-size:.82rem;color:var(--gray-600);">
+        {{ user.full_name }}{% if user.department %} · {{ user.department }}{% endif %}
+      </div>
+      {% endif %}
+      {% if log.acknowledged_at %}
+      <div style="font-size:.78rem;color:var(--gray-400);margin-top:.35rem;">
+        🕐 {{ log.acknowledged_at.strftime("%Y-%m-%d %H:%M:%S") }} UTC
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+<script>
+  history.pushState(null, "", location.href);
+  window.addEventListener("popstate", () => history.pushState(null, "", location.href));
+</script>
+{% endblock %}
