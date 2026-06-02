@@ -177,7 +177,13 @@
 
     confirmAckBtn.addEventListener("click", () => {
       confirmAckBtn.disabled = true;
-      fetch(`/d/${cfg.token}/acknowledge`, { method: "POST", credentials: "same-origin" })
+      const body = new URLSearchParams({ attempt_id: cfg.attemptId });
+      fetch(`/d/${cfg.token}/acknowledge`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body,
+      })
         .then((r) => { if (r.ok) return r.text(); throw r.status; })
         .then((html) => { document.open(); document.write(html); document.close(); })
         .catch(() => { confirmAckBtn.disabled = false; });

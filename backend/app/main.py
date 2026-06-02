@@ -3,13 +3,12 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.auth.sso import SSOMiddleware
 from app.database import init_db
 from app.api.documents import router as doc_router
 from app.api.admin import router as admin_router
-from app.api.dev import router as dev_router
 from app.config import settings
 
 # backend/app/main.py → backend/ → repo root → frontend/
@@ -29,14 +28,15 @@ app = FastAPI(
     redoc_url=None,
 )
 
-app.add_middleware(SSOMiddleware)
-
 app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR / "static")), name="static")
 
 app.include_router(doc_router)
 app.include_router(admin_router)
-if settings.DEV_MODE:
-    app.include_router(dev_router)
+
+
+@app.get("/")
+async def root():
+    return RedirectResponse("/admin/")
 
 
 @app.on_event("startup")

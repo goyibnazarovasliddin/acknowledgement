@@ -11,16 +11,24 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Delete document with confirmation
+  // Delete document with custom confirmation dialog
   document.querySelectorAll(".btn-delete-doc").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      if (!confirm("Delete this document? This cannot be undone.")) return;
+      const title = btn.dataset.docTitle || "";
+      const ok = await window.customConfirm({
+        title: I18n.t("delete_title"),
+        message: I18n.t("delete_msg").replace("{title}", title),
+        confirmText: I18n.t("delete_confirm"),
+        cancelText: I18n.t("dialog_no"),
+        danger: true,
+      });
+      if (!ok) return;
       const docId = btn.dataset.docId;
       const res = await fetch(`/admin/documents/${docId}`, { method: "DELETE" });
       if (res.ok) {
         btn.closest("tr").remove();
       } else {
-        alert("Delete failed.");
+        await window.customAlert({ title: I18n.t("delete_title"), message: I18n.t("delete_failed") });
       }
     });
   });
@@ -28,5 +36,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // Filter form auto-submit on select change
   document.querySelectorAll(".auto-submit-select").forEach((sel) => {
     sel.addEventListener("change", () => sel.closest("form").submit());
+  });
+
+  // Full-row navigation (rows with data-href) — ignore clicks on links/buttons
+  document.querySelectorAll("tr.row-link[data-href]").forEach((tr) => {
+    tr.addEventListener("click", (e) => {
+      if (e.target.closest("a, button")) return;
+      window.location.href = tr.dataset.href;
+    });
   });
 });

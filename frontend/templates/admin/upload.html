@@ -11,15 +11,15 @@
   <aside class="admin-sidebar">
     <div class="sidebar-brand">
       <div class="sidebar-brand-logo">
-        <div class="sidebar-brand-icon" style="font-weight:900;font-size:1rem;">A</div>
+        <div class="sidebar-brand-icon" style="background:#fff;padding:3px;"><img src="/static/img/agrobank-logo.webp" alt="Agrobank" style="width:100%;height:100%;object-fit:contain;" /></div>
         <span class="sidebar-brand-name">Agrobank</span>
       </div>
       <div class="sidebar-brand-desc">ACK System</div>
     </div>
     <nav class="admin-nav">
       <div class="admin-nav-section" data-i18n="admin_management">Boshqaruv</div>
-      <a href="/admin/">📋 <span data-i18n="admin_documents">Hujjatlar</span></a>
-      <a href="/admin/upload" class="active">📤 <span data-i18n="admin_upload">Yuklash</span></a>
+      <a href="/admin/"><svg class="icon" viewBox="0 0 24 24"><path d="M9 2h6a1 1 0 0 1 1 1v1h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2V3a1 1 0 0 1 1-1z"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg> <span data-i18n="admin_documents">Hujjatlar</span></a>
+      <a href="/admin/upload" class="active"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> <span data-i18n="admin_upload">Yuklash</span></a>
     </nav>
     <div class="sidebar-user">
       <div class="sidebar-user-avatar">{{ admin_user[0]|upper }}</div>
@@ -38,21 +38,90 @@
     <div class="admin-content">
       <div style="max-width:520px;">
         <div class="table-card" style="padding:2rem;">
-          <form method="POST" action="/admin/upload" enctype="multipart/form-data">
+          <form method="POST" action="/admin/upload" enctype="multipart/form-data" id="upload-form">
             <div class="form-group">
               <label class="form-label" data-i18n="admin_upload_label">Sarlavha</label>
               <input type="text" name="title" class="form-input" placeholder="Hujjat nomi..." required />
             </div>
             <div class="form-group">
               <label class="form-label" data-i18n="admin_upload_file">Fayl</label>
-              <input type="file" name="file" class="form-input" style="padding:.5rem;" required />
-              <div class="form-hint" data-i18n="admin_upload_hint">PDF, Word, Excel, rasm va boshqa formatlar</div>
+
+              <div class="upload-zone" id="upload-zone" tabindex="0">
+                <div class="upload-zone-icon">
+                  <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <div class="upload-zone-title">
+                  <span data-i18n="upload_drag">Faylni shu yerga sudrab tashlang</span>
+                  <span class="upload-zone-browse" data-i18n="upload_browse">yoki tanlang</span>
+                </div>
+                <div class="upload-zone-hint" data-i18n="admin_upload_hint">PDF, Word, Excel, rasm va boshqa formatlar</div>
+              </div>
+
+              <div class="upload-file" id="upload-file">
+                <span class="upload-file-icon">
+                  <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </span>
+                <div class="upload-file-meta">
+                  <div class="upload-file-name" id="upload-file-name"></div>
+                  <div class="upload-file-size" id="upload-file-size"></div>
+                </div>
+                <button type="button" class="upload-file-remove" id="upload-file-remove" data-i18n-title="upload_remove">
+                  <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+
+              <input type="file" name="file" id="file-input" style="display:none;" required />
             </div>
             <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
               <a href="/admin/" class="btn btn-ghost" data-i18n="admin_back">← Orqaga</a>
               <button type="submit" class="btn btn-primary" style="flex:1;" data-i18n="admin_upload_btn">Yuklash →</button>
             </div>
           </form>
+
+          <script>
+            (function () {
+              const zone   = document.getElementById("upload-zone");
+              const input  = document.getElementById("file-input");
+              const fileEl = document.getElementById("upload-file");
+              const nameEl = document.getElementById("upload-file-name");
+              const sizeEl = document.getElementById("upload-file-size");
+              const rmBtn  = document.getElementById("upload-file-remove");
+
+              function human(bytes) {
+                if (bytes < 1024) return bytes + " B";
+                if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+                return (bytes / 1048576).toFixed(1) + " MB";
+              }
+              function show() {
+                if (input.files && input.files.length) {
+                  const f = input.files[0];
+                  nameEl.textContent = f.name;
+                  sizeEl.textContent = human(f.size);
+                  fileEl.classList.add("show");
+                  zone.style.display = "none";
+                }
+              }
+              zone.addEventListener("click", () => input.click());
+              zone.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); } });
+              input.addEventListener("change", show);
+
+              ["dragenter", "dragover"].forEach(ev =>
+                zone.addEventListener(ev, (e) => { e.preventDefault(); zone.classList.add("dragover"); }));
+              ["dragleave", "drop"].forEach(ev =>
+                zone.addEventListener(ev, (e) => { e.preventDefault(); zone.classList.remove("dragover"); }));
+              zone.addEventListener("drop", (e) => {
+                if (e.dataTransfer.files && e.dataTransfer.files.length) {
+                  input.files = e.dataTransfer.files;
+                  show();
+                }
+              });
+              rmBtn.addEventListener("click", () => {
+                input.value = "";
+                fileEl.classList.remove("show");
+                zone.style.display = "flex";
+              });
+            })();
+          </script>
         </div>
       </div>
     </div>

@@ -7,14 +7,16 @@
     <!-- Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;">
       <div style="display:flex;align-items:center;gap:.6rem;">
-        <div style="width:30px;height:30px;background:linear-gradient(135deg,var(--green-700),var(--green-500));border-radius:.4rem;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:.95rem;">A</div>
+        <img src="/static/img/agrobank-logo.webp" alt="Agrobank" style="width:30px;height:30px;object-fit:contain;border-radius:.4rem;background:#fff;padding:2px;" />
         <span style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green-700);">Agrobank</span>
       </div>
       <button class="lang-toggle lang-toggle-light">RU</button>
     </div>
 
     <!-- Icon -->
-    <div style="width:72px;height:72px;background:#fef3c7;border:2px solid #fcd34d;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-size:2rem;">⚠️</div>
+    <div class="icon-circle icon-circle-warn">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
 
     <h2 style="font-size:1.2rem;font-weight:800;margin-bottom:.6rem;">
       <span class="uz-text">Shaxsingizni tasdiqlab bo'lmadi</span>
@@ -22,8 +24,13 @@
     </h2>
 
     <p style="font-size:.9rem;color:var(--gray-600);line-height:1.65;margin-bottom:1.5rem;">
+      {% if reason == "login" %}
+      <span class="uz-text">Siz {{ attempts }} marta noto'g'ri login yoki parol kiritdingiz. Iltimos, administrator bilan bog'laning.</span>
+      <span class="ru-text" style="display:none;">Вы {{ attempts }} раз(а) ввели неверный логин или пароль. Обратитесь к администратору.</span>
+      {% else %}
       <span class="uz-text">Siz {{ attempts }} marta rad etdingiz. Tizim sizni aniqlay olmadi. Iltimos, administrator bilan bog'laning.</span>
       <span class="ru-text" style="display:none;">Вы отклонили {{ attempts }} раз(а). Система не смогла подтвердить вашу личность. Обратитесь к администратору.</span>
+      {% endif %}
     </p>
 
     <!-- Admin contact card -->
@@ -34,7 +41,7 @@
       </div>
       <a href="mailto:{{ admin_email }}"
          style="display:flex;align-items:center;gap:.6rem;color:var(--green-800);text-decoration:none;font-weight:600;font-size:.95rem;">
-        <span style="font-size:1.1rem;">✉</span>
+        <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
         {{ admin_email }}
       </a>
     </div>

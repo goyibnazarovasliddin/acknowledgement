@@ -1,28 +1,30 @@
 """
 User-facing document flow endpoints.
 
-GET  /d/{token}          — identify user, show confirm page
-POST /d/{token}/confirm  — confirm identity → CONFIRMED
-GET  /d/{token}/view     — document viewer (requires CONFIRMED or ACKNOWLEDGED)
-GET  /d/{token}/file     — serve raw file (requires CONFIRMED or ACKNOWLEDGED)
-POST /d/{token}/acknowledge — finalize → ACKNOWLEDGED
-GET  /d/{token}/done     — final thank-you page
+GET  /d/{token}             — login form (no session) or confirm page (session)
+POST /d/{token}/login       — verify AD credentials → create doc session
+POST /d/{token}/confirm     — "Ha, bu men" → create attempt (OPENED) → viewer
+POST /d/{token}/decline     — "Yo'q, bu men emas" → re-check AD (max 3)
+GET  /d/{token}/view        — (viewer is returned by /confirm)
+GET  /d/{token}/file        — serve raw file (requires doc session)
+POST /d/{token}/acknowledge — finalize attempt → ACKNOWLEDGED
 """
 import logging
 from pathlib import Path
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 _TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent.parent / "frontend" / "templates"
 
 from app.auth.ldap_client import ldap_client
-from app.auth.sso import get_remote_user
+from app.auth.session import create_doc_session, get_doc_session, clear_doc_session
 from app.config import settings
 from app.database import get_db
-from app.models import AckStatus, Document
+from app.models import Document
 from app.services import document_service, log_service
 
 logger = logging.getLogger(__name__)
@@ -35,6 +37,10 @@ TEMPLATE_CTX = {
     "min_view_seconds": settings.MIN_VIEW_SECONDS,
 }
 
+_DECLINE_COOKIE = "ack_decline"
+_LOGIN_COOKIE = "ack_login"
+_MAX_ATTEMPTS = settings.MAX_DECLINE_ATTEMPTS
+
 
 def _get_doc_or_404(db: Session, token: str) -> Document:
     doc = document_service.get_by_token(db, token)
@@ -45,98 +51,146 @@ def _get_doc_or_404(db: Session, token: str) -> Document:
 
 def _client_ip(request: Request) -> str:
     forwarded = request.headers.get("X-Forwarded-For")
-    return forwarded.split(",")[0].strip() if forwarded else request.client.host
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else ""
 
 
 # ---------------------------------------------------------------------------
-# STEP 1 — open link
+# STEP 1 — open link → login form OR confirm page
 # ---------------------------------------------------------------------------
 @router.get("/d/{token}", response_class=HTMLResponse)
 async def open_document(token: str, request: Request, db: Session = Depends(get_db)):
     doc = _get_doc_or_404(db, token)
-    remote_user = get_remote_user(request)
+    user = get_doc_session(request, token)
 
-    ip = _client_ip(request)
-    ua = request.headers.get("User-Agent", "")
-
-    if not remote_user:
-        log_service.record_open(
-            db,
-            document_id=doc.id,
-            ad_username=None,
-            full_name=None,
-            department=None,
-            email=None,
-            ip_address=ip,
-            user_agent=ua,
-        )
+    if not user:
+        try:
+            declined = int(request.cookies.get(f"{_DECLINE_COOKIE}_{token}", "0"))
+        except ValueError:
+            declined = 0
         return templates.TemplateResponse(
-            "restricted.html",
-            {"request": request, "doc": doc, **TEMPLATE_CTX},
-        )
-
-    # Fetch AD info
-    user_info = ldap_client.get_user_info(remote_user)
-    if not user_info:
-        logger.warning("User %s authenticated but not found in LDAP", remote_user)
-        user_info = {
-            "username": remote_user,
-            "full_name": remote_user,
-            "department": "",
-            "email": "",
-        }
-
-    log = log_service.record_open(
-        db,
-        document_id=doc.id,
-        ad_username=user_info["username"],
-        full_name=user_info["full_name"],
-        department=user_info["department"],
-        email=user_info["email"],
-        ip_address=ip,
-        user_agent=ua,
-    )
-
-    # Already confirmed / acknowledged → go straight to viewer
-    if log.status in (AckStatus.CONFIRMED, AckStatus.ACKNOWLEDGED):
-        return templates.TemplateResponse(
-            "viewer.html",
-            {"request": request, "doc": doc, "user": user_info, "log": log, **TEMPLATE_CTX},
+            "login.html",
+            {
+                "request": request,
+                "doc": doc,
+                "error": None,
+                "relogin_attempt": declined or None,
+                "max_attempts": _MAX_ATTEMPTS,
+            },
         )
 
     return templates.TemplateResponse(
         "confirm.html",
-        {"request": request, "doc": doc, "user": user_info, "log": log},
+        {"request": request, "doc": doc, "user": user, **TEMPLATE_CTX},
     )
 
 
 # ---------------------------------------------------------------------------
-# STEP 2b — decline identity (re-verify from AD, max 3 attempts)
+# STEP 2 — AD login
 # ---------------------------------------------------------------------------
-_DECLINE_COOKIE = "ack_decline"
-_MAX_ATTEMPTS   = settings.MAX_DECLINE_ATTEMPTS
+@router.post("/d/{token}/login", response_class=HTMLResponse)
+async def login(
+    token: str,
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    doc = _get_doc_or_404(db, token)
+
+    cookie_key = f"{_LOGIN_COOKIE}_{token}"
+    try:
+        fails = int(request.cookies.get(cookie_key, "0"))
+    except ValueError:
+        fails = 0
+
+    user_info = ldap_client.authenticate(username, password)
+
+    if not user_info:
+        fails += 1
+        if fails >= _MAX_ATTEMPTS:
+            response = templates.TemplateResponse(
+                "contact_admin.html",
+                {
+                    "request": request,
+                    "doc": doc,
+                    "admin_email": settings.ADMIN_EMAIL,
+                    "attempts": fails,
+                    "reason": "login",
+                },
+            )
+            response.delete_cookie(cookie_key)
+            return response
+
+        response = templates.TemplateResponse(
+            "login.html",
+            {
+                "request": request,
+                "doc": doc,
+                "error": "invalid",
+                "login_attempt": fails,
+                "max_attempts": _MAX_ATTEMPTS,
+            },
+            status_code=401,
+        )
+        response.set_cookie(cookie_key, str(fails), httponly=True, samesite="lax", max_age=3600)
+        return response
+
+    response = RedirectResponse(f"/d/{token}", status_code=302)
+    create_doc_session(response, token, user_info)
+    response.delete_cookie(cookie_key)
+    return response
 
 
+# ---------------------------------------------------------------------------
+# STEP 3a — confirm identity → open document (new attempt)
+# ---------------------------------------------------------------------------
+@router.post("/d/{token}/confirm", response_class=HTMLResponse)
+async def confirm_identity(token: str, request: Request, db: Session = Depends(get_db)):
+    doc = _get_doc_or_404(db, token)
+    user = get_doc_session(request, token)
+    if not user:
+        return RedirectResponse(f"/d/{token}", status_code=302)
+
+    log = log_service.create_attempt(
+        db,
+        document_id=doc.id,
+        ad_username=user["username"],
+        full_name=user.get("full_name"),
+        department=user.get("department"),
+        position=user.get("position"),
+        email=user.get("email"),
+        ip_address=_client_ip(request),
+        user_agent=request.headers.get("User-Agent", ""),
+    )
+
+    response = templates.TemplateResponse(
+        "viewer.html",
+        {"request": request, "doc": doc, "user": user, "attempt_id": log.id, **TEMPLATE_CTX},
+    )
+    response.delete_cookie(f"{_DECLINE_COOKIE}_{token}")
+    return response
+
+
+# ---------------------------------------------------------------------------
+# STEP 3b — decline identity → ask for AD login again (max attempts)
+# ---------------------------------------------------------------------------
 @router.post("/d/{token}/decline", response_class=HTMLResponse)
 async def decline_identity(token: str, request: Request, db: Session = Depends(get_db)):
     doc = _get_doc_or_404(db, token)
-    remote_user = get_remote_user(request)
+    user = get_doc_session(request, token)
+    if not user:
+        return RedirectResponse(f"/d/{token}", status_code=302)
 
-    if not remote_user:
-        return templates.TemplateResponse("restricted.html", {"request": request, "doc": doc})
-
-    # Read current attempt count from signed cookie
-    cookie_key  = f"{_DECLINE_COOKIE}_{token}"
-    raw_count   = request.cookies.get(cookie_key, "0")
+    cookie_key = f"{_DECLINE_COOKIE}_{token}"
     try:
-        attempts = int(raw_count)
+        attempts = int(request.cookies.get(cookie_key, "0"))
     except ValueError:
         attempts = 0
-
     attempts += 1
 
     if attempts >= _MAX_ATTEMPTS:
-        # Blocked — show contact-admin page
         response = templates.TemplateResponse(
             "contact_admin.html",
             {
@@ -147,72 +201,25 @@ async def decline_identity(token: str, request: Request, db: Session = Depends(g
             },
         )
         response.delete_cookie(cookie_key)
+        clear_doc_session(response, token)
         return response
 
-    # Re-query AD for fresh data
-    user_info = ldap_client.get_user_info(remote_user)
-    if not user_info:
-        user_info = {"username": remote_user, "full_name": remote_user, "department": "", "email": ""}
-
-    response = templates.TemplateResponse(
-        "confirm.html",
-        {
-            "request": request,
-            "doc": doc,
-            "user": user_info,
-            "log": log_service.get_log(db, doc.id, user_info["username"]),
-            "decline_attempt": attempts,
-            "max_attempts": _MAX_ATTEMPTS,
-        },
-    )
+    # Not "me" → clear session and ask for AD login again (each try re-authenticates)
+    response = RedirectResponse(f"/d/{token}", status_code=302)
+    clear_doc_session(response, token)
     response.set_cookie(cookie_key, str(attempts), httponly=True, samesite="lax", max_age=3600)
     return response
 
 
 # ---------------------------------------------------------------------------
-# STEP 3 — confirm identity
-# ---------------------------------------------------------------------------
-@router.post("/d/{token}/confirm", response_class=HTMLResponse)
-async def confirm_identity(token: str, request: Request, db: Session = Depends(get_db)):
-    doc = _get_doc_or_404(db, token)
-    remote_user = get_remote_user(request)
-
-    if not remote_user:
-        raise HTTPException(403, "SSO identity required")
-
-    user_info = ldap_client.get_user_info(remote_user)
-    if not user_info:
-        user_info = {"username": remote_user, "full_name": remote_user, "department": "", "email": ""}
-
-    log = log_service.get_log(db, doc.id, user_info["username"])
-    if not log:
-        raise HTTPException(400, "No open record found. Please reopen the link.")
-
-    log = log_service.advance_to_confirmed(db, log)
-
-    return templates.TemplateResponse(
-        "viewer.html",
-        {"request": request, "doc": doc, "user": user_info, "log": log, **TEMPLATE_CTX},
-    )
-
-
-# ---------------------------------------------------------------------------
-# STEP 4 — serve raw file (viewer iframe / download)
+# STEP 4 — serve raw file
 # ---------------------------------------------------------------------------
 @router.get("/d/{token}/file")
 async def serve_file(token: str, request: Request, db: Session = Depends(get_db)):
     doc = _get_doc_or_404(db, token)
-    remote_user = get_remote_user(request)
-
-    if not remote_user:
+    user = get_doc_session(request, token)
+    if not user:
         raise HTTPException(403, "Authentication required")
-
-    user_info = ldap_client.get_user_info(remote_user)
-    username = user_info["username"] if user_info else remote_user
-
-    log = log_service.get_log(db, doc.id, username)
-    if not log or log.status not in (AckStatus.CONFIRMED, AckStatus.ACKNOWLEDGED):
-        raise HTTPException(403, "Identity confirmation required before accessing file")
 
     file_path = document_service.get_file_path(doc)
     if not file_path.exists():
@@ -230,23 +237,29 @@ async def serve_file(token: str, request: Request, db: Session = Depends(get_db)
 # STEP 5 — acknowledge
 # ---------------------------------------------------------------------------
 @router.post("/d/{token}/acknowledge", response_class=HTMLResponse)
-async def acknowledge(token: str, request: Request, db: Session = Depends(get_db)):
+async def acknowledge(
+    token: str,
+    request: Request,
+    attempt_id: Optional[int] = Form(None),
+    db: Session = Depends(get_db),
+):
     doc = _get_doc_or_404(db, token)
-    remote_user = get_remote_user(request)
+    user = get_doc_session(request, token)
+    if not user:
+        raise HTTPException(403, "Authentication required")
 
-    if not remote_user:
-        raise HTTPException(403, "SSO identity required")
+    # Fallback to the user's most recent attempt if no id supplied (e.g. stale cache)
+    if attempt_id is None:
+        latest = log_service.latest_attempt(db, doc.id, user["username"])
+        if not latest:
+            raise HTTPException(400, "Attempt not found")
+        attempt_id = latest.id
 
-    user_info = ldap_client.get_user_info(remote_user)
-    username = user_info["username"] if user_info else remote_user
-
-    log = log_service.get_log(db, doc.id, username)
-    if not log or log.status not in (AckStatus.CONFIRMED, AckStatus.ACKNOWLEDGED):
-        raise HTTPException(400, "Cannot acknowledge before confirming identity")
-
-    log = log_service.advance_to_acknowledged(db, log)
+    log = log_service.acknowledge_attempt(db, attempt_id, user["username"])
+    if not log:
+        raise HTTPException(400, "Attempt not found")
 
     return templates.TemplateResponse(
         "final.html",
-        {"request": request, "doc": doc, "user": user_info or {}, "log": log},
+        {"request": request, "doc": doc, "user": user, "log": log},
     )

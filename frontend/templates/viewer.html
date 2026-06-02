@@ -13,39 +13,46 @@
 
   <!-- Toolbar — lang toggle lives here, same row -->
   <div class="viewer-toolbar">
-    <div style="display:flex;align-items:center;gap:.6rem;padding-right:.85rem;border-right:1px solid rgba(255,255,255,.2);">
-      <div style="width:26px;height:26px;background:rgba(255,255,255,.2);border-radius:.35rem;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem;color:white;">A</div>
-      <span style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.8;">Agrobank</span>
+    <div class="viewer-bar-inner" style="gap:1rem;">
+      <div style="display:flex;align-items:center;gap:.6rem;padding-right:.85rem;border-right:1px solid rgba(255,255,255,.2);">
+        <img src="/static/img/agrobank-logo.webp" alt="Agrobank" style="width:26px;height:26px;object-fit:contain;border-radius:.35rem;background:#fff;padding:2px;" />
+        <span style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.8;">Agrobank</span>
+      </div>
+      <span class="viewer-toolbar-title">{{ doc.title }}</span>
+      <a href="/d/{{ doc.share_token }}/file" download="{{ doc.original_filename }}"
+         style="color:rgba(255,255,255,.85);font-size:.8rem;text-decoration:none;display:flex;align-items:center;gap:.35rem;padding:.3rem .7rem;border:1px solid rgba(255,255,255,.3);border-radius:.4rem;flex-shrink:0;transition:background .15s;"
+         onmouseover="this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.background='transparent'">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span data-i18n="btn_download">Yuklab olish</span>
+      </a>
+      <button class="lang-toggle">RU</button>
     </div>
-    <span class="viewer-toolbar-title">{{ doc.title }}</span>
-    <a href="/d/{{ doc.share_token }}/file" download="{{ doc.original_filename }}"
-       style="color:rgba(255,255,255,.85);font-size:.8rem;text-decoration:none;display:flex;align-items:center;gap:.35rem;padding:.3rem .7rem;border:1px solid rgba(255,255,255,.3);border-radius:.4rem;flex-shrink:0;transition:background .15s;"
-       onmouseover="this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.background='transparent'">
-      ⬇ <span data-i18n="btn_download">Yuklab olish</span>
-    </a>
-    <button class="lang-toggle">RU</button>
   </div>
 
   <!-- Stats bar -->
   <div class="viewer-stats">
-    <div class="stat-group">
-      <span class="stat-label" data-i18n="viewer_timer">Minimal vaqt</span>
-      <span class="stat-value" id="timer-countdown">
-        {{ min_view_seconds }} <span style="font-size:.72rem;font-weight:400;color:var(--gray-600);" data-i18n="viewer_sec">soniya</span>
-      </span>
-    </div>
-    <div class="stat-group" style="flex:1;max-width:340px;">
-      <span class="stat-label" data-i18n="viewer_read">O'qildi</span>
-      <div style="display:flex;align-items:center;gap:.6rem;">
-        <div class="progress-track" style="flex:1;">
-          <div class="progress-bar" id="scroll-bar" style="width:0%"></div>
-        </div>
-        <span style="font-size:.82rem;font-weight:700;min-width:38px;color:var(--green-700);" id="scroll-pct">0%</span>
+    <div class="viewer-bar-inner" style="gap:2.5rem;">
+      <div class="stat-group">
+        <span class="stat-label" data-i18n="viewer_timer">Minimal vaqt</span>
+        <span class="stat-value" id="timer-countdown">
+          {{ min_view_seconds }} <span style="font-size:.72rem;font-weight:400;color:var(--gray-600);" data-i18n="viewer_sec">soniya</span>
+        </span>
       </div>
-    </div>
-    <div class="stat-group" style="margin-left:auto;">
-      <span class="stat-label" data-i18n="viewer_user">Foydalanuvchi</span>
-      <span class="stat-value" style="font-size:.875rem;">{{ user.full_name }}</span>
+      {% if doc.mime_type == "application/pdf" %}
+      <div class="stat-group" style="flex:1;max-width:340px;">
+        <span class="stat-label" data-i18n="viewer_read">O'qildi</span>
+        <div style="display:flex;align-items:center;gap:.6rem;">
+          <div class="progress-track" style="flex:1;">
+            <div class="progress-bar" id="scroll-bar" style="width:0%"></div>
+          </div>
+          <span style="font-size:.82rem;font-weight:700;min-width:38px;color:var(--green-700);" id="scroll-pct">0%</span>
+        </div>
+      </div>
+      {% endif %}
+      <div class="stat-group" style="margin-left:auto;">
+        <span class="stat-label" data-i18n="viewer_user">Foydalanuvchi</span>
+        <span class="stat-value" style="font-size:.875rem;">{{ user.full_name }}</span>
+      </div>
     </div>
   </div>
 
@@ -61,11 +68,15 @@
     {% else %}
       <div style="display:flex;align-items:center;justify-content:center;height:100%;padding:2rem;">
         <div style="background:white;border-radius:1rem;padding:3rem;text-align:center;max-width:420px;box-shadow:0 4px 24px rgba(0,0,0,.2);">
-          <div style="font-size:3.5rem;margin-bottom:1rem;">📄</div>
+          <div style="color:var(--green-700);margin-bottom:1rem;display:flex;justify-content:center;">
+            <svg class="icon" style="width:3.5rem;height:3.5rem;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
           <p style="font-weight:700;font-size:1rem;margin-bottom:.4rem;">{{ doc.original_filename }}</p>
           <p style="font-size:.85rem;color:var(--gray-600);margin-bottom:1.5rem;">Ushbu fayl tur uchun inline ko'rinish mavjud emas.</p>
           <a href="/d/{{ doc.share_token }}/file" download="{{ doc.original_filename }}"
-             class="btn btn-primary">⬇ <span data-i18n="btn_download">Yuklab olish</span></a>
+             class="btn btn-primary">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span data-i18n="btn_download">Yuklab olish</span></a>
         </div>
       </div>
     {% endif %}
@@ -73,12 +84,16 @@
 
   <!-- Footer -->
   <div class="viewer-footer">
-    <span class="viewer-warn" id="viewer-warn" style="display:none;">
-      ⏳ <span id="warn-text" data-i18n="scroll_warn">Hujjatni to'liq o'qing</span>
-    </span>
-    <button id="btn-acknowledge" class="btn btn-success btn-lg btn-disabled" disabled>
-      ✓ <span data-i18n="btn_acknowledge">Tanishib chiqdim</span>
-    </button>
+    <div class="viewer-bar-inner" style="justify-content:space-between;">
+      <span class="viewer-warn" id="viewer-warn" style="display:none;">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span id="warn-text" data-i18n="scroll_warn">Hujjatni to'liq o'qing</span>
+      </span>
+      <button id="btn-acknowledge" class="btn btn-success btn-lg btn-disabled" disabled style="margin-left:auto;">
+        <svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        <span data-i18n="btn_acknowledge">Tanishib chiqdim</span>
+      </button>
+    </div>
   </div>
 
 </div>
@@ -86,7 +101,9 @@
 <!-- Acknowledge modal -->
 <div class="modal-overlay hidden" id="ack-modal">
   <div class="modal-box">
-    <div class="modal-icon">📋</div>
+    <div class="modal-icon">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    </div>
     <h3 class="modal-title" data-i18n="ack_popup_title">Tasdiqlash</h3>
     <p class="modal-msg" data-i18n="ack_popup_msg">Ushbu amal qayd etiladi. Davom etasizmi?</p>
     <div class="modal-actions">
@@ -102,6 +119,7 @@
 <script>
   window.VIEWER_CONFIG = {
     token: "{{ doc.share_token }}",
+    attemptId: {{ attempt_id }},
     mimeType: "{{ doc.mime_type }}",
     minSeconds: {{ min_view_seconds }},
     scrollThreshold: {{ scroll_threshold }},

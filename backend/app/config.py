@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     LDAP_BIND_DN: str = "CN=training,OU=Services Users,OU=Priveleged Accounts,DC=corp,DC=agrobank,DC=uz"
     LDAP_PASSWORD: str = "PASSWORD"
     LDAP_BASE_DN: str = "DC=corp,DC=agrobank,DC=uz"
+    LDAP_DOMAIN: str = "corp.agrobank.uz"  # UPN suffix for user bind (sam@DOMAIN)
+
+    # DEV_MODE only: lets any username log in with this password (no real AD).
+    DEV_LOGIN_PASSWORD: str = "dev"
 
     SECRET_KEY: str = "change-me-in-production"
     UPLOAD_DIR: str = str(_BACKEND_DIR / "uploads")

@@ -11,7 +11,7 @@
 
   <!-- Left branding -->
   <div class="login-left">
-    <div class="login-brand-icon" style="font-size:2.5rem;font-weight:900;font-family:serif;">A</div>
+    <div class="login-brand-icon" style="background:#fff;padding:10px;"><img src="/static/img/agrobank-logo.webp" alt="Agrobank" style="width:100%;height:100%;object-fit:contain;" /></div>
     <div class="login-brand-title">Agrobank</div>
     <div class="login-brand-sub">Hujjat tasdiqlash tizimi</div>
     <div style="margin-top:3rem;opacity:.45;font-size:.8rem;max-width:260px;text-align:center;">
@@ -26,7 +26,7 @@
       <!-- Header with lang toggle -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;">
         <div style="display:flex;align-items:center;gap:.6rem;">
-          <div style="width:34px;height:34px;background:linear-gradient(135deg,var(--green-700),var(--green-500));border-radius:.45rem;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:1.1rem;">A</div>
+          <img src="/static/img/agrobank-logo.webp" alt="Agrobank" style="width:34px;height:34px;object-fit:contain;border-radius:.45rem;background:#fff;padding:2px;" />
           <div>
             <div style="font-weight:800;font-size:1rem;" data-i18n="login_title">Admin Panel</div>
             <div style="font-size:.75rem;color:var(--gray-600);" data-i18n="login_sub">Agrobank ACK tizimi</div>
@@ -36,7 +36,10 @@
       </div>
 
       {% if error %}
-      <div class="login-error">⚠ <span data-i18n="login_error">Login yoki parol noto'g'ri</span></div>
+      <div class="login-error" style="display:flex;align-items:center;gap:.4rem;">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span data-i18n="login_error">Login yoki parol noto'g'ri</span>
+      </div>
       {% endif %}
 
       <form method="POST" action="/admin/login" class="login-form">
@@ -49,7 +52,7 @@
           <input type="password" name="password" class="form-input" placeholder="••••••••" autocomplete="current-password" required />
         </div>
         <button type="submit" class="btn btn-primary btn-full btn-lg" style="margin-top:.5rem;" data-i18n="login_btn">
-          Kirish →
+          Kirish
         </button>
       </form>
     </div>

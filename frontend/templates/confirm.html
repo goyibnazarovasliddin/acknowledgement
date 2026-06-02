@@ -7,7 +7,7 @@
     <!-- Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;">
       <div style="display:flex;align-items:center;gap:.6rem;">
-        <div style="width:34px;height:34px;background:linear-gradient(135deg,var(--green-700),var(--green-500));border-radius:.45rem;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:1.05rem;">A</div>
+        <img src="/static/img/agrobank-logo.webp" alt="Agrobank" style="width:34px;height:34px;object-fit:contain;border-radius:.45rem;background:#fff;padding:2px;" />
         <div>
           <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green-700);">Agrobank</div>
           <div style="font-size:.78rem;color:var(--gray-600);margin-top:.05rem;">{{ doc.title }}</div>
@@ -18,7 +18,7 @@
 
     {% if decline_attempt %}
     <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:.5rem;padding:.75rem 1rem;margin-bottom:1.25rem;font-size:.85rem;color:#92400e;display:flex;align-items:center;gap:.5rem;">
-      ⚠
+      <svg class="icon" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       <span>
         <span class="uz-text">Urinish {{ decline_attempt }} / {{ max_attempts }}. Ma'lumotlar AD dan qayta tekshirildi.</span>
         <span class="ru-text" style="display:none;">Попытка {{ decline_attempt }} / {{ max_attempts }}. Данные повторно проверены из AD.</span>
@@ -40,14 +40,19 @@
         <span class="info-value">{{ user.full_name }}</span>
       </div>
       <div class="info-row">
-        <span class="info-label" data-i18n="field_dept">Bo'lim</span>
+        <span class="info-label" data-i18n="field_dept">Tarkibiy tuzilma</span>
         <span class="info-value">{{ user.department or "—" }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label" data-i18n="field_position">Lavozim</span>
+        <span class="info-value">{{ user.position or "—" }}</span>
       </div>
     </div>
 
     <form method="POST" action="/d/{{ doc.share_token }}/confirm">
       <button type="submit" class="btn btn-success btn-full btn-lg" style="margin-bottom:.75rem;">
-        ✓ <span data-i18n="btn_confirm">Ha, bu men</span>
+        <svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        <span data-i18n="btn_confirm">Ha, bu men</span>
       </button>
     </form>
 

@@ -12,15 +12,15 @@
   <aside class="admin-sidebar">
     <div class="sidebar-brand">
       <div class="sidebar-brand-logo">
-        <div class="sidebar-brand-icon" style="font-weight:900;font-size:1rem;">A</div>
+        <div class="sidebar-brand-icon" style="background:#fff;padding:3px;"><img src="/static/img/agrobank-logo.webp" alt="Agrobank" style="width:100%;height:100%;object-fit:contain;" /></div>
         <span class="sidebar-brand-name">Agrobank</span>
       </div>
       <div class="sidebar-brand-desc">ACK System</div>
     </div>
     <nav class="admin-nav">
       <div class="admin-nav-section" data-i18n="admin_management">Boshqaruv</div>
-      <a href="/admin/" class="active">📋 <span data-i18n="admin_documents">Hujjatlar</span></a>
-      <a href="/admin/upload">📤 <span data-i18n="admin_upload">Yuklash</span></a>
+      <a href="/admin/" class="active"><svg class="icon" viewBox="0 0 24 24"><path d="M9 2h6a1 1 0 0 1 1 1v1h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2V3a1 1 0 0 1 1-1z"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg> <span data-i18n="admin_documents">Hujjatlar</span></a>
+      <a href="/admin/upload"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> <span data-i18n="admin_upload">Yuklash</span></a>
     </nav>
     <div class="sidebar-user">
       <div class="sidebar-user-avatar">{{ admin_user[0]|upper }}</div>
@@ -46,12 +46,17 @@
       <div class="admin-topbar-actions">
         <button class="lang-toggle lang-toggle-light">RU</button>
         <a href="/admin/documents/{{ doc.id }}/file" target="_blank" class="btn btn-ghost btn-sm">
-          👁 <span data-i18n="admin_view_file">Ko'rish</span>
+          <svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span data-i18n="admin_view_file">Ko'rish</span>
         </a>
         <a href="/admin/documents/{{ doc.id }}/export/csv?{% if filter_status %}status={{ filter_status }}&{% endif %}{% if filter_department %}department={{ filter_department }}{% endif %}"
-           class="btn btn-ghost btn-sm" data-i18n="admin_export_csv">⬇ CSV</a>
+           class="btn btn-ghost btn-sm">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV
+        </a>
         <a href="/admin/documents/{{ doc.id }}/export/excel?{% if filter_status %}status={{ filter_status }}&{% endif %}{% if filter_department %}department={{ filter_department }}{% endif %}"
-           class="btn btn-primary btn-sm" data-i18n="admin_export_excel">⬇ Excel</a>
+           class="btn btn-primary btn-sm">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Excel
+        </a>
       </div>
     </div>
 
@@ -64,7 +69,8 @@
                value="{{ request.base_url }}d/{{ doc.share_token }}" />
         <button class="btn btn-outline btn-sm btn-copy-link"
                 data-url="{{ request.base_url }}d/{{ doc.share_token }}">
-          🔗 <span data-i18n="copy_link">Nusxa</span>
+          <svg class="icon" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <span data-i18n="copy_link">Nusxa</span>
         </button>
       </div>
 
@@ -89,78 +95,55 @@
         </div>
       </form>
 
-      <!-- Logs table -->
+      <!-- Users table -->
       <div class="table-card">
         <div class="table-header">
           <h2>
-            <span data-i18n="admin_documents">Hujjatlar</span> —
-            <span style="color:var(--green-700);">{{ logs | length }}</span>
-            <span data-i18n="admin_records">ta yozuv</span>
+            <span data-i18n="admin_employees">Xodimlar</span> —
+            <span style="color:var(--green-700);" id="row-count">{{ rows | length }}</span>
+            <span data-i18n="admin_people">ta</span>
           </h2>
+          <span class="live-dot" data-i18n="live">jonli</span>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th data-i18n="admin_name">Ism</th>
-                <th data-i18n="admin_dept">Bo'lim</th>
-                <th data-i18n="admin_status">Holat</th>
-                <th data-i18n="admin_opened">Ochildi</th>
-                <th data-i18n="admin_confirmed">Tasdiqlandi</th>
-                <th data-i18n="admin_acknowledged">Tanishib chiqdi</th>
-                <th>IP</th>
+                <th>#</th>
+                <th data-i18n="admin_name">FISH</th>
+                <th data-i18n="col_dept">Tarkibiy tuzilma</th>
+                <th data-i18n="col_position">Lavozim</th>
+                <th data-i18n="admin_status">Holati</th>
+                <th data-i18n="col_time">Vaqti</th>
+                <th data-i18n="col_ip">IP manzil</th>
               </tr>
             </thead>
-            <tbody>
-            {% for log in logs %}
-              <tr>
+            <tbody id="rows-body"
+                   data-url="/admin/documents/{{ doc.id }}/logs.json?{% if filter_status %}status={{ filter_status }}&{% endif %}{% if filter_department %}department={{ filter_department }}{% endif %}"
+                   data-base="/admin/documents/{{ doc.id }}/users/">
+            {% for r in rows %}
+              <tr class="row-link" data-username="{{ r.username }}">
+                <td>{{ loop.index }}</td>
                 <td>
-                  <div style="font-weight:600;font-size:.875rem;">{{ log.full_name or "—" }}</div>
-                  <div style="font-size:.75rem;color:var(--gray-400);">{{ log.ad_username or "anonymous" }}</div>
+                  <div style="font-weight:600;font-size:.875rem;">{{ r.full_name or "—" }}</div>
+                  <div style="font-size:.75rem;color:var(--gray-400);">{{ r.username }}</div>
                 </td>
-                <td style="font-size:.85rem;color:var(--gray-700);">{{ log.department or "—" }}</td>
+                <td style="font-size:.85rem;color:var(--gray-700);">{{ r.department or "—" }}</td>
+                <td style="font-size:.85rem;color:var(--gray-700);">{{ r.position or "—" }}</td>
                 <td>
-                  {% if log.status.value == "ACKNOWLEDGED" %}
-                    <span class="badge badge-green">
-                      <span class="uz-text">Tanishib chiqdi</span>
-                      <span class="ru-text" style="display:none;">Ознакомился</span>
-                    </span>
-                  {% elif log.status.value == "CONFIRMED" %}
-                    <span class="badge badge-blue">
-                      <span class="uz-text">Tasdiqlandi</span>
-                      <span class="ru-text" style="display:none;">Подтверждён</span>
-                    </span>
-                  {% elif log.status.value == "IDENTIFIED_NOT_CONFIRMED" %}
-                    <span class="badge badge-warning">
-                      <span class="uz-text">Tasdiqlanmadi</span>
-                      <span class="ru-text" style="display:none;">Не подтверждён</span>
-                    </span>
+                  {% if r.status.value == "ACKNOWLEDGED" %}
+                    <span class="badge badge-green" data-i18n="status_ACKNOWLEDGED">Tanishib chiqilgan</span>
                   {% else %}
-                    <span class="badge badge-gray">
-                      <span class="uz-text">Anonim</span>
-                      <span class="ru-text" style="display:none;">Анонимно</span>
-                    </span>
+                    <span class="badge badge-warning" data-i18n="status_OPENED">Hujjat ochilgan</span>
                   {% endif %}
                 </td>
                 <td style="font-size:.8rem;white-space:nowrap;color:var(--gray-600);">
-                  {% if log.opened_at %}{{ log.opened_at.strftime("%Y-%m-%d %H:%M") }}{% else %}—{% endif %}
+                  {{ r.time.strftime("%Y-%m-%d %H:%M:%S") if r.time else "—" }}
                 </td>
-                <td style="font-size:.8rem;white-space:nowrap;color:var(--gray-600);">
-                  {% if log.confirmed_at %}{{ log.confirmed_at.strftime("%Y-%m-%d %H:%M") }}{% else %}—{% endif %}
-                </td>
-                <td style="font-size:.8rem;white-space:nowrap;">
-                  {% if log.acknowledged_at %}
-                    <span style="color:var(--green-700);font-weight:600;">{{ log.acknowledged_at.strftime("%Y-%m-%d %H:%M") }}</span>
-                  {% else %}—{% endif %}
-                </td>
-                <td style="font-size:.78rem;color:var(--gray-400);">{{ log.ip_address or "—" }}</td>
+                <td style="font-size:.78rem;color:var(--gray-400);">{{ r.ip_address or "—" }}</td>
               </tr>
             {% else %}
-              <tr>
-                <td colspan="7" style="text-align:center;padding:3rem;color:var(--gray-400);" data-i18n="admin_no_records">
-                  Yozuvlar topilmadi
-                </td>
-              </tr>
+              <tr><td colspan="7" style="text-align:center;padding:3rem;color:var(--gray-400);" data-i18n="admin_no_records">Yozuvlar topilmadi</td></tr>
             {% endfor %}
             </tbody>
           </table>
@@ -174,15 +157,56 @@
 <script src="/static/js/i18n.js"></script>
 <script src="/static/js/admin.js"></script>
 <script>
-  function syncStatusLang() {
-    const lang = I18n.getLang();
-    document.querySelectorAll('.uz-text').forEach(el => el.style.display = lang === 'uz' ? '' : 'none');
-    document.querySelectorAll('.ru-text').forEach(el => el.style.display = lang === 'ru' ? '' : 'none');
-  }
-  document.addEventListener('DOMContentLoaded', syncStatusLang);
-  document.querySelectorAll('.lang-toggle').forEach(btn =>
-    btn.addEventListener('click', () => setTimeout(syncStatusLang, 0))
-  );
+  // Real-time refresh of the grouped users table
+  (function () {
+    const body = document.getElementById("rows-body");
+    if (!body) return;
+    const url  = body.dataset.url;
+    const base = body.dataset.base;
+
+    function statusBadge(status) {
+      if (status === "ACKNOWLEDGED")
+        return '<span class="badge badge-green">' + I18n.t("status_ACKNOWLEDGED") + '</span>';
+      return '<span class="badge badge-warning">' + I18n.t("status_OPENED") + '</span>';
+    }
+    function esc(s) {
+      return (s || "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[c]));
+    }
+    function render(rows) {
+      document.getElementById("row-count").textContent = rows.length;
+      if (!rows.length) {
+        body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:3rem;color:var(--gray-400);">' + I18n.t("admin_no_records") + '</td></tr>';
+        return;
+      }
+      body.innerHTML = rows.map((r, i) => `
+        <tr class="row-link" data-username="${esc(r.username)}">
+          <td>${i + 1}</td>
+          <td>
+            <div style="font-weight:600;font-size:.875rem;">${esc(r.full_name) || "—"}</div>
+            <div style="font-size:.75rem;color:var(--gray-400);">${esc(r.username)}</div>
+          </td>
+          <td style="font-size:.85rem;color:var(--gray-700);">${esc(r.department) || "—"}</td>
+          <td style="font-size:.85rem;color:var(--gray-700);">${esc(r.position) || "—"}</td>
+          <td>${statusBadge(r.status)}</td>
+          <td style="font-size:.8rem;white-space:nowrap;color:var(--gray-600);">${esc(r.time) || "—"}</td>
+          <td style="font-size:.78rem;color:var(--gray-400);">${esc(r.ip_address) || "—"}</td>
+        </tr>`).join("");
+      bindRows();
+    }
+    function bindRows() {
+      body.querySelectorAll("tr.row-link").forEach(tr => {
+        tr.onclick = () => { window.location.href = base + encodeURIComponent(tr.dataset.username); };
+      });
+    }
+    async function poll() {
+      try {
+        const res = await fetch(url, { credentials: "same-origin" });
+        if (res.ok) { const data = await res.json(); render(data.rows); }
+      } catch (e) { /* keep last view */ }
+    }
+    bindRows();
+    setInterval(poll, 4000);
+  })();
 </script>
 </body>
 </html>

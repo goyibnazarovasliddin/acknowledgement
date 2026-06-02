@@ -7,13 +7,15 @@
     <!-- Header row -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;">
       <div style="display:flex;align-items:center;gap:.6rem;">
-        <div style="width:30px;height:30px;background:linear-gradient(135deg,var(--green-700),var(--green-500));border-radius:.4rem;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:.95rem;">A</div>
+        <img src="/static/img/agrobank-logo.webp" alt="Agrobank" style="width:30px;height:30px;object-fit:contain;border-radius:.4rem;background:#fff;padding:2px;" />
         <span style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green-700);">Agrobank</span>
       </div>
       <button class="lang-toggle lang-toggle-light">RU</button>
     </div>
 
-    <div class="success-icon">✓</div>
+    <div class="success-icon">
+      <svg class="icon" style="width:2.25rem;height:2.25rem;stroke-width:3;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
 
     <h2 style="font-size:1.6rem;font-weight:800;margin-bottom:.5rem;" data-i18n="final_title">Rahmat!</h2>
     <p style="font-size:1rem;color:var(--gray-700);margin-bottom:.4rem;" data-i18n="final_msg">
@@ -34,8 +36,9 @@
       </div>
       {% endif %}
       {% if log.acknowledged_at %}
-      <div style="font-size:.78rem;color:var(--gray-400);margin-top:.35rem;">
-        🕐 {{ log.acknowledged_at.strftime("%Y-%m-%d %H:%M:%S") }} UTC
+      <div style="font-size:.78rem;color:var(--gray-400);margin-top:.35rem;display:flex;align-items:center;gap:.35rem;">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        {{ log.acknowledged_at.strftime("%Y-%m-%d %H:%M:%S") }} UTC
       </div>
       {% endif %}
     </div>

@@ -7,9 +7,18 @@ const TRANSLATIONS = {
     confirm_title:         "Shaxsingizni tasdiqlang",
     confirm_subtitle:      "Quyidagi ma'lumotlar to'g'rimi?",
     field_name:            "Ism Familiya",
-    field_dept:            "Bo'lim",
+    field_dept:            "Tarkibiy tuzilma",
+    field_position:        "Lavozim",
     btn_confirm:           "Ha, bu men",
     btn_decline:           "Yo'q, bu men emas",
+
+    // AD login (document flow)
+    login_ad_title:        "Tizimga kiring",
+    login_ad_sub:          "Hujjat bilan tanishish uchun korporativ hisobingiz bilan kiring.",
+    login_username_ph:     "ism.familiya",
+    login_invalid:         "Login yoki parol noto'g'ri",
+    attempt_word:          "Urinish",
+    relogin_msg:           "Iltimos, ma'lumotlaringizni qayta kiriting",
 
     // Viewer
     viewer_title:          "Hujjat bilan tanishish",
@@ -33,10 +42,8 @@ const TRANSLATIONS = {
     final_info:            "Ma'lumot",
 
     // Statuses
-    status_ANONYMOUS_OPENED:           "Anonim ochildi",
-    status_IDENTIFIED_NOT_CONFIRMED:   "Tasdiqlanmadi",
-    status_CONFIRMED:                  "Tasdiqlandi",
-    status_ACKNOWLEDGED:               "Tanishib chiqdi",
+    status_OPENED:                     "Hujjat ochilgan",
+    status_ACKNOWLEDGED:               "Tanishib chiqilgan",
 
     // Admin general
     admin_panel:           "Admin Panel",
@@ -61,6 +68,24 @@ const TRANSLATIONS = {
     admin_records:         "ta yozuv",
     admin_title_col:       "Sarlavha",
     admin_view_file:       "Ko'rish",
+    admin_employees:       "Xodimlar",
+    admin_people:          "ta",
+    admin_attempts:        "Urinishlar",
+    live:                  "jonli",
+    col_dept:              "Tarkibiy tuzilma",
+    col_position:          "Lavozim",
+    col_time:              "Vaqti",
+    col_ip:                "IP manzil",
+
+    // Dialog
+    dialog_yes:            "Ha",
+    dialog_no:             "Bekor qilish",
+    dialog_confirm_title:  "Tasdiqlang",
+    dialog_notice:         "Ma'lumot",
+    delete_title:          "Hujjatni o'chirish",
+    delete_msg:            "\"{title}\" hujjati o'chiriladi. Bu amalni qaytarib bo'lmaydi.",
+    delete_confirm:        "O'chirish",
+    delete_failed:         "O'chirib bo'lmadi.",
 
     // Admin export / filter
     admin_export_csv:      "CSV yuklash",
@@ -81,6 +106,9 @@ const TRANSLATIONS = {
     admin_upload_btn:      "Yuklash →",
     admin_uploaded_ok:     "Hujjat yuklandi!",
     admin_upload_again:    "Yana yuklash",
+    upload_drag:           "Faylni shu yerga sudrab tashlang",
+    upload_browse:         "yoki tanlang",
+    upload_remove:         "O'chirish",
 
     // Share link
     share_link:            "Ulashish havolasi",
@@ -92,7 +120,7 @@ const TRANSLATIONS = {
     login_sub:             "Agrobank ACK tizimi",
     login_username:        "Login",
     login_password:        "Parol",
-    login_btn:             "Kirish →",
+    login_btn:             "Kirish",
     login_error:           "Login yoki parol noto'g'ri",
 
     // Lang
@@ -107,9 +135,18 @@ const TRANSLATIONS = {
     confirm_title:         "Подтвердите личность",
     confirm_subtitle:      "Следующие данные верны?",
     field_name:            "Имя и фамилия",
-    field_dept:            "Отдел",
+    field_dept:            "Структурное подразделение",
+    field_position:        "Должность",
     btn_confirm:           "Да, это я",
     btn_decline:           "Нет, это не я",
+
+    // AD login (document flow)
+    login_ad_title:        "Войдите в систему",
+    login_ad_sub:          "Войдите под своей корпоративной учётной записью для ознакомления с документом.",
+    login_username_ph:     "имя.фамилия",
+    login_invalid:         "Неверный логин или пароль",
+    attempt_word:          "Попытка",
+    relogin_msg:           "Пожалуйста, введите данные заново",
 
     // Viewer
     viewer_title:          "Ознакомление с документом",
@@ -133,10 +170,8 @@ const TRANSLATIONS = {
     final_info:            "Информация",
 
     // Statuses
-    status_ANONYMOUS_OPENED:           "Анонимно открыт",
-    status_IDENTIFIED_NOT_CONFIRMED:   "Не подтверждён",
-    status_CONFIRMED:                  "Подтверждён",
-    status_ACKNOWLEDGED:               "Ознакомился",
+    status_OPENED:                     "Документ открыт",
+    status_ACKNOWLEDGED:               "Ознакомлен",
 
     // Admin general
     admin_panel:           "Панель администратора",
@@ -161,6 +196,24 @@ const TRANSLATIONS = {
     admin_records:         "записей",
     admin_title_col:       "Название",
     admin_view_file:       "Просмотр",
+    admin_employees:       "Сотрудники",
+    admin_people:          "чел.",
+    admin_attempts:        "Попытки",
+    live:                  "в реальном времени",
+    col_dept:              "Структурное подразделение",
+    col_position:          "Должность",
+    col_time:              "Время",
+    col_ip:                "IP адрес",
+
+    // Dialog
+    dialog_yes:            "Да",
+    dialog_no:             "Отмена",
+    dialog_confirm_title:  "Подтвердите",
+    dialog_notice:         "Информация",
+    delete_title:          "Удалить документ",
+    delete_msg:            "Документ \"{title}\" будет удалён. Это действие необратимо.",
+    delete_confirm:        "Удалить",
+    delete_failed:         "Не удалось удалить.",
 
     // Admin export / filter
     admin_export_csv:      "Экспорт CSV",
@@ -181,6 +234,9 @@ const TRANSLATIONS = {
     admin_upload_btn:      "Загрузить →",
     admin_uploaded_ok:     "Документ загружен!",
     admin_upload_again:    "Загрузить ещё",
+    upload_drag:           "Перетащите файл сюда",
+    upload_browse:         "или выберите",
+    upload_remove:         "Удалить",
 
     // Share link
     share_link:            "Ссылка для отправки",
@@ -192,7 +248,7 @@ const TRANSLATIONS = {
     login_sub:             "Система Agrobank ACK",
     login_username:        "Логин",
     login_password:        "Пароль",
-    login_btn:             "Войти →",
+    login_btn:             "Войти",
     login_error:           "Неверный логин или пароль",
 
     // Lang

@@ -19,6 +19,7 @@ class UserInfo(BaseModel):
     username: str
     full_name: str
     department: str
+    position: str
     email: str
 
 
@@ -27,10 +28,10 @@ class DocumentLogOut(BaseModel):
     ad_username: Optional[str]
     full_name: Optional[str]
     department: Optional[str]
+    position: Optional[str]
     email: Optional[str]
     status: AckStatus
     opened_at: datetime
-    confirmed_at: Optional[datetime]
     acknowledged_at: Optional[datetime]
     ip_address: Optional[str]
 

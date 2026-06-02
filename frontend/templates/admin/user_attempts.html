@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ username }} — {{ doc.title }}</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+<div class="admin-layout">
+
+  <aside class="admin-sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-logo">
+        <div class="sidebar-brand-icon" style="background:#fff;padding:3px;"><img src="/static/img/agrobank-logo.webp" alt="Agrobank" style="width:100%;height:100%;object-fit:contain;" /></div>
+        <span class="sidebar-brand-name">Agrobank</span>
+      </div>
+      <div class="sidebar-brand-desc">ACK System</div>
+    </div>
+    <nav class="admin-nav">
+      <div class="admin-nav-section" data-i18n="admin_management">Boshqaruv</div>
+      <a href="/admin/" class="active"><svg class="icon" viewBox="0 0 24 24"><path d="M9 2h6a1 1 0 0 1 1 1v1h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2V3a1 1 0 0 1 1-1z"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg> <span data-i18n="admin_documents">Hujjatlar</span></a>
+      <a href="/admin/upload"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> <span data-i18n="admin_upload">Yuklash</span></a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar">{{ admin_user[0]|upper }}</div>
+      <span class="sidebar-user-name">{{ admin_user }}</span>
+      <a href="/admin/logout" class="sidebar-logout" data-i18n="admin_logout">Chiqish</a>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <div style="display:flex;align-items:center;gap:.85rem;">
+        <a href="/admin/documents/{{ doc.id }}" class="back-btn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 3L5 8l5 5"/>
+          </svg>
+        </a>
+        <div>
+          <div style="font-size:.72rem;color:var(--gray-400);font-weight:500;letter-spacing:.04em;text-transform:uppercase;">{{ doc.title }}</div>
+          <h1 style="margin-top:.1rem;line-height:1.2;">
+            {{ attempts[0].full_name if attempts else username }}
+            <span style="font-size:.8rem;color:var(--gray-400);font-weight:500;">({{ username }})</span>
+          </h1>
+        </div>
+      </div>
+      <div class="admin-topbar-actions">
+        <button class="lang-toggle lang-toggle-light">RU</button>
+      </div>
+    </div>
+
+    <div class="admin-content">
+
+      {% if attempts %}
+      <div class="info-card" style="display:flex;gap:2.5rem;flex-wrap:wrap;">
+        <div><div class="info-label" data-i18n="col_dept">Tarkibiy tuzilma</div><div class="info-value" style="font-size:.9rem;">{{ attempts[0].department or "—" }}</div></div>
+        <div><div class="info-label" data-i18n="col_position">Lavozim</div><div class="info-value" style="font-size:.9rem;">{{ attempts[0].position or "—" }}</div></div>
+      </div>
+      {% endif %}
+
+      <div class="table-card">
+        <div class="table-header">
+          <h2>
+            <span data-i18n="admin_attempts">Urinishlar</span> —
+            <span style="color:var(--green-700);" id="row-count">{{ attempts | length }}</span>
+          </h2>
+          <span class="live-dot" data-i18n="live">jonli</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th data-i18n="admin_status">Holati</th>
+                <th data-i18n="admin_opened">Ochilgan</th>
+                <th data-i18n="status_ACKNOWLEDGED">Tanishib chiqilgan</th>
+                <th data-i18n="col_ip">IP manzil</th>
+              </tr>
+            </thead>
+            <tbody id="rows-body" data-url="/admin/documents/{{ doc.id }}/users/{{ username }}/logs.json">
+            {% for a in attempts %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>
+                  {% if a.status.value == "ACKNOWLEDGED" %}
+                    <span class="badge badge-green" data-i18n="status_ACKNOWLEDGED">Tanishib chiqilgan</span>
+                  {% else %}
+                    <span class="badge badge-warning" data-i18n="status_OPENED">Hujjat ochilgan</span>
+                  {% endif %}
+                </td>
+                <td style="font-size:.8rem;white-space:nowrap;color:var(--gray-600);">{{ a.opened_at.strftime("%Y-%m-%d %H:%M:%S") if a.opened_at else "—" }}</td>
+                <td style="font-size:.8rem;white-space:nowrap;">
+                  {% if a.acknowledged_at %}<span style="color:var(--green-700);font-weight:600;">{{ a.acknowledged_at.strftime("%Y-%m-%d %H:%M:%S") }}</span>{% else %}—{% endif %}
+                </td>
+                <td style="font-size:.78rem;color:var(--gray-400);">{{ a.ip_address or "—" }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="5" style="text-align:center;padding:3rem;color:var(--gray-400);" data-i18n="admin_no_records">Yozuvlar topilmadi</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="/static/js/i18n.js"></script>
+<script src="/static/js/admin.js"></script>
+<script>
+  (function () {
+    const body = document.getElementById("rows-body");
+    if (!body) return;
+    const url = body.dataset.url;
+    function statusBadge(s) {
+      if (s === "ACKNOWLEDGED") return '<span class="badge badge-green">' + I18n.t("status_ACKNOWLEDGED") + '</span>';
+      return '<span class="badge badge-warning">' + I18n.t("status_OPENED") + '</span>';
+    }
+    function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+    function render(rows) {
+      document.getElementById("row-count").textContent = rows.length;
+      if (!rows.length) { body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;color:var(--gray-400);">' + I18n.t("admin_no_records") + '</td></tr>'; return; }
+      body.innerHTML = rows.map((r, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${statusBadge(r.status)}</td>
+          <td style="font-size:.8rem;white-space:nowrap;color:var(--gray-600);">${esc(r.opened_at) || "—"}</td>
+          <td style="font-size:.8rem;white-space:nowrap;">${r.acknowledged_at ? '<span style="color:var(--green-700);font-weight:600;">' + esc(r.acknowledged_at) + '</span>' : "—"}</td>
+          <td style="font-size:.78rem;color:var(--gray-400);">${esc(r.ip_address) || "—"}</td>
+        </tr>`).join("");
+    }
+    async function poll() {
+      try { const res = await fetch(url, { credentials: "same-origin" }); if (res.ok) { const d = await res.json(); render(d.rows); } } catch (e) {}
+    }
+    setInterval(poll, 4000);
+  })();
+</script>
+</body>
+</html>
