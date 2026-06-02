@@ -4,7 +4,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     Column, Integer, String, DateTime, Enum as SAEnum,
-    ForeignKey, Text, BigInteger,
+    ForeignKey, Text, BigInteger, Boolean,
 )
 from sqlalchemy.orm import relationship
 
@@ -32,6 +32,9 @@ class Document(Base):
     share_token = Column(String(64), unique=True, nullable=False, default=_token)
     uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     uploaded_by = Column(String(255), nullable=True)
+
+    archived = Column(Boolean, nullable=False, default=False)
+    archived_at = Column(DateTime, nullable=True)
 
     logs = relationship("DocumentLog", back_populates="document", cascade="all, delete-orphan")
 
@@ -61,3 +64,20 @@ class DocumentLog(Base):
     user_agent = Column(Text, nullable=True)
 
     document = relationship("Document", back_populates="logs")
+
+
+class DeepArchive(Base):
+    """
+    Hidden, never-shown-in-UI graveyard. When a document is "deleted" from the
+    archive, its full snapshot (document + every log) is serialized here as JSON
+    so nothing is ever truly lost at the DB level.
+    """
+    __tablename__ = "deep_archive"
+
+    id = Column(Integer, primary_key=True, index=True)
+    original_document_id = Column(Integer, nullable=True)
+    title = Column(String(255), nullable=True)
+    stored_filename = Column(String(255), nullable=True)  # file kept on disk
+    deleted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    deleted_by = Column(String(255), nullable=True)
+    payload = Column(Text, nullable=False)  # JSON: full document + all logs

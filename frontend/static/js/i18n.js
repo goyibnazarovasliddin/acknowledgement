@@ -26,6 +26,7 @@ const TRANSLATIONS = {
     viewer_read:           "O'qildi",
     viewer_sec:            "soniya",
     viewer_user:           "Foydalanuvchi",
+    viewer_no_preview:     "Ushbu fayl turi uchun ko'rish mavjud emas.",
     btn_download:          "Yuklab olish",
     btn_acknowledge:       "Tanishib chiqdim",
     ack_popup_title:       "Tasdiqlash",
@@ -51,10 +52,29 @@ const TRANSLATIONS = {
     admin_upload:          "Yuklash",
     admin_management:      "Boshqaruv",
     admin_logout:          "Chiqish",
+    admin_archive:         "Arxiv",
+    admin_archive_list:    "Arxivlangan hujjatlar",
+    admin_no_archive:      "Arxivda hujjat yo'q.",
+    admin_restore:         "Tiklash",
+    archive_title:         "Hujjatni arxivlash",
+    archive_msg:           "\"{title}\" arxivga o'tkaziladi. Ma'lumotlar saqlanadi, istalgan vaqt tiklash mumkin.",
+    restore_title:         "Hujjatni tiklash",
+    restore_msg:           "\"{title}\" arxivdan Hujjatlarga qaytariladi.",
+    action_failed:         "Amal bajarilmadi.",
     admin_doc_list:        "Hujjatlar ro'yxati",
     admin_stats_total:     "Jami hujjatlar",
     admin_stats_ack:       "Tanishib chiqqanlar",
     admin_stats_users:     "Jami foydalanuvchilar",
+    admin_stats_ad_users:      "AD jami xodimlar",
+    admin_stats_depts:         "Tarkibiy tuzilmalar",
+    admin_stats_system_users:  "Tizimdan foydalanganlar",
+    admin_stats_ack_employees: "Tanishgan xodimlar",
+    admin_stats_coverage:      "Qamrov foizi",
+    chart_donut:               "Tanishish holati (AD bo'yicha)",
+    chart_dept:                "Bo'limlar bo'yicha tanishgan",
+    chart_daily:               "So'nggi 30 kun — kunlik tanishish",
+    chart_ack:                 "Tanishgan",
+    chart_not_ack:             "Tanishmagan",
 
     // Admin table
     admin_name:            "Ism",
@@ -154,6 +174,7 @@ const TRANSLATIONS = {
     viewer_read:           "Прочитано",
     viewer_sec:            "сек.",
     viewer_user:           "Пользователь",
+    viewer_no_preview:     "Для этого типа файла предпросмотр недоступен.",
     btn_download:          "Скачать",
     btn_acknowledge:       "Ознакомился",
     ack_popup_title:       "Подтверждение",
@@ -179,10 +200,29 @@ const TRANSLATIONS = {
     admin_upload:          "Загрузить",
     admin_management:      "Управление",
     admin_logout:          "Выход",
+    admin_archive:         "Архив",
+    admin_archive_list:    "Архивированные документы",
+    admin_no_archive:      "В архиве нет документов.",
+    admin_restore:         "Восстановить",
+    archive_title:         "Архивировать документ",
+    archive_msg:           "\"{title}\" будет перемещён в архив. Данные сохранятся, можно восстановить в любой момент.",
+    restore_title:         "Восстановить документ",
+    restore_msg:           "\"{title}\" будет возвращён из архива в Документы.",
+    action_failed:         "Не удалось выполнить.",
     admin_doc_list:        "Список документов",
     admin_stats_total:     "Всего документов",
     admin_stats_ack:       "Ознакомились",
     admin_stats_users:     "Всего пользователей",
+    admin_stats_ad_users:      "Всего сотрудников (AD)",
+    admin_stats_depts:         "Структурные подразделения",
+    admin_stats_system_users:  "Воспользовались системой",
+    admin_stats_ack_employees: "Ознакомленные",
+    admin_stats_coverage:      "Процент охвата",
+    chart_donut:               "Статус ознакомления (по AD)",
+    chart_dept:                "Ознакомления по отделам",
+    chart_daily:               "Последние 30 дней — по дням",
+    chart_ack:                 "Ознакомлены",
+    chart_not_ack:             "Не ознакомлены",
 
     // Admin table
     admin_name:            "Имя",
@@ -296,13 +336,21 @@ const I18n = (() => {
     setLang(current === "uz" ? "ru" : "uz");
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  function init() {
     applyAll();
     updateToggles();
     document.querySelectorAll(".lang-toggle").forEach(btn => {
       btn.addEventListener("click", toggle);
     });
-  });
+  }
+
+  // Run now if the document is already parsed (e.g. page injected via
+  // document.write), otherwise wait for DOMContentLoaded.
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
 
   return { t, setLang, getLang, toggle };
 })();

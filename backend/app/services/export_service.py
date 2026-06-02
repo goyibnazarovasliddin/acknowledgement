@@ -7,6 +7,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 
 from app.models import DocumentLog, AckStatus
+from app.timeutil import fmt_local
 
 _HEADERS = [
     "#", "FISH", "Login", "Tarkibiy tuzilma", "Lavozim", "Email",
@@ -20,7 +21,7 @@ _STATUS_LABELS = {
 
 
 def _fmt_dt(dt: datetime | None) -> str:
-    return dt.strftime("%Y-%m-%d %H:%M:%S") if dt else ""
+    return fmt_local(dt)
 
 
 def _row(idx: int, log: DocumentLog) -> list:

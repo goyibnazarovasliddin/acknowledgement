@@ -13,6 +13,8 @@ GET      /admin/documents/{id}/export/csv|excel
 DELETE   /admin/documents/{id}
 """
 import logging
+from collections import Counter
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -21,12 +23,14 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Resp
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from app.auth.ldap_client import ldap_client
 from app.auth.session import clear_session, create_session, get_session_user
 from app.config import settings
 from app.database import get_db
 from app.models import AckStatus, Document, DocumentLog
 from app.services import document_service, export_service, log_service
 from app.services.document_service import list_documents
+from app.timeutil import fmt_local
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +38,7 @@ _TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent.parent / "fronten
 
 router = APIRouter(prefix="/admin")
 templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
+templates.env.filters["localdt"] = fmt_local
 
 
 def _require_admin(request: Request) -> str:
@@ -44,7 +49,7 @@ def _require_admin(request: Request) -> str:
 
 
 def _fmt(dt) -> str:
-    return dt.strftime("%Y-%m-%d %H:%M:%S") if dt else ""
+    return fmt_local(dt)
 
 
 # ---------------------------------------------------------------------------
@@ -105,10 +110,131 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         )
         doc_stats.append({"doc": doc, "ack_count": ack_users, "total_count": total_users})
 
+    # ---- KPI aggregates ----
+    dir_stats = ldap_client.get_directory_stats()
+    total_ad_users = dir_stats["total_users"]
+    total_ad_depts = len(dir_stats["departments"])
+
+    total_docs = len(docs)
+    system_users = db.query(DocumentLog.ad_username).distinct().count()
+    ack_users = (
+        db.query(DocumentLog.ad_username)
+        .filter(DocumentLog.status == AckStatus.ACKNOWLEDGED)
+        .distinct()
+        .count()
+    )
+    coverage = round(system_users / total_ad_users * 100) if total_ad_users else 0
+
+    stats = {
+        "total_docs": total_docs,
+        "total_ad_users": total_ad_users,
+        "total_ad_depts": total_ad_depts,
+        "system_users": system_users,
+        "ack_users": ack_users,
+        "coverage": coverage,
+    }
+
+    # ---- Chart data ----
+    # Donut: acknowledged vs not (relative to AD total)
+    not_ack = max(total_ad_users - ack_users, 0)
+
+    # Bar: distinct acknowledged users per department (from our records)
+    pairs = (
+        db.query(DocumentLog.department, DocumentLog.ad_username)
+        .filter(DocumentLog.status == AckStatus.ACKNOWLEDGED)
+        .distinct()
+        .all()
+    )
+    dept_counter = Counter((d or "—") for d, _ in pairs)
+    dept_top = dept_counter.most_common(10)
+
+    # Line: acknowledgements per local day, last 30 days
+    offset = timedelta(hours=settings.TZ_OFFSET_HOURS)
+    since_utc = datetime.utcnow() - timedelta(days=30)
+    ack_rows = (
+        db.query(DocumentLog.acknowledged_at)
+        .filter(
+            DocumentLog.status == AckStatus.ACKNOWLEDGED,
+            DocumentLog.acknowledged_at >= since_utc,
+        )
+        .all()
+    )
+    day_counter = Counter()
+    for (dt,) in ack_rows:
+        if dt:
+            day_counter[(dt + offset).strftime("%Y-%m-%d")] += 1
+    today_local = (datetime.utcnow() + offset).date()
+    day_labels, day_data = [], []
+    for i in range(29, -1, -1):
+        d = (today_local - timedelta(days=i)).strftime("%Y-%m-%d")
+        day_labels.append(d[5:])  # MM-DD
+        day_data.append(day_counter.get(d, 0))
+
+    charts = {
+        "donut": {"ack": ack_users, "not_ack": not_ack},
+        "dept": {"labels": [d for d, _ in dept_top], "data": [c for _, c in dept_top]},
+        "daily": {"labels": day_labels, "data": day_data},
+    }
+
     return templates.TemplateResponse(
         "admin/index.html",
+        {
+            "request": request,
+            "doc_stats": doc_stats,
+            "stats": stats,
+            "charts": charts,
+            "admin_user": admin_user,
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Archive (soft-archived documents) — same flow as dashboard
+# ---------------------------------------------------------------------------
+@router.get("/archive", response_class=HTMLResponse)
+async def admin_archive(request: Request, db: Session = Depends(get_db)):
+    admin_user = _require_admin(request)
+    docs = list_documents(db, archived=True)
+    doc_stats = []
+    for doc in docs:
+        ack_users = (
+            db.query(DocumentLog.ad_username)
+            .filter(DocumentLog.document_id == doc.id, DocumentLog.status == AckStatus.ACKNOWLEDGED)
+            .distinct()
+            .count()
+        )
+        total_users = (
+            db.query(DocumentLog.ad_username)
+            .filter(DocumentLog.document_id == doc.id)
+            .distinct()
+            .count()
+        )
+        doc_stats.append({"doc": doc, "ack_count": ack_users, "total_count": total_users})
+
+    return templates.TemplateResponse(
+        "admin/archive.html",
         {"request": request, "doc_stats": doc_stats, "admin_user": admin_user},
     )
+
+
+@router.post("/documents/{doc_id}/archive")
+async def archive_document(doc_id: int, request: Request, db: Session = Depends(get_db)):
+    _require_admin(request)
+    doc = db.query(Document).filter(Document.id == doc_id).first()
+    if not doc:
+        raise HTTPException(404)
+    document_service.archive_document(db, doc)
+    return {"ok": True}
+
+
+@router.post("/documents/{doc_id}/unarchive")
+async def unarchive_document(doc_id: int, request: Request, db: Session = Depends(get_db)):
+    _require_admin(request)
+    doc = db.query(Document).filter(Document.id == doc_id).first()
+    if not doc:
+        raise HTTPException(404)
+    document_service.unarchive_document(db, doc)
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------------------
@@ -147,22 +273,13 @@ def _apply_filters(rows, status, department):
     return rows
 
 
-@router.get("/documents/{doc_id}", response_class=HTMLResponse)
-async def document_detail(
-    doc_id: int,
-    request: Request,
-    status: Optional[str] = Query(None),
-    department: Optional[str] = Query(None),
-    db: Session = Depends(get_db),
-):
-    admin_user = _require_admin(request)
+def _detail_response(request, db, doc_id, status, department, section, admin_user):
     doc = db.query(Document).filter(Document.id == doc_id).first()
     if not doc:
         raise HTTPException(404)
-
-    rows = _apply_filters(log_service.list_user_rows(db, doc_id), status, department)
-    departments = sorted({r["department"] for r in log_service.list_user_rows(db, doc_id) if r.get("department")})
-
+    all_rows = log_service.list_user_rows(db, doc_id)
+    rows = _apply_filters(all_rows, status, department)
+    departments = sorted({r["department"] for r in all_rows if r.get("department")})
     return templates.TemplateResponse(
         "admin/document_detail.html",
         {
@@ -174,8 +291,33 @@ async def document_detail(
             "filter_status": status,
             "filter_department": department,
             "admin_user": admin_user,
+            "section": section,
         },
     )
+
+
+@router.get("/documents/{doc_id}", response_class=HTMLResponse)
+async def document_detail(
+    doc_id: int,
+    request: Request,
+    status: Optional[str] = Query(None),
+    department: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    admin_user = _require_admin(request)
+    return _detail_response(request, db, doc_id, status, department, "documents", admin_user)
+
+
+@router.get("/archive/documents/{doc_id}", response_class=HTMLResponse)
+async def archive_document_detail(
+    doc_id: int,
+    request: Request,
+    status: Optional[str] = Query(None),
+    department: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    admin_user = _require_admin(request)
+    return _detail_response(request, db, doc_id, status, department, "archive", admin_user)
 
 
 @router.get("/documents/{doc_id}/logs.json")
@@ -208,9 +350,7 @@ async def document_logs_json(
 # ---------------------------------------------------------------------------
 # User drill-down — all attempts of one user for this document
 # ---------------------------------------------------------------------------
-@router.get("/documents/{doc_id}/users/{username}", response_class=HTMLResponse)
-async def user_attempts(doc_id: int, username: str, request: Request, db: Session = Depends(get_db)):
-    admin_user = _require_admin(request)
+def _user_response(request, db, doc_id, username, section, admin_user):
     doc = db.query(Document).filter(Document.id == doc_id).first()
     if not doc:
         raise HTTPException(404)
@@ -223,8 +363,21 @@ async def user_attempts(doc_id: int, username: str, request: Request, db: Sessio
             "username": username,
             "attempts": attempts,
             "admin_user": admin_user,
+            "section": section,
         },
     )
+
+
+@router.get("/documents/{doc_id}/users/{username}", response_class=HTMLResponse)
+async def user_attempts(doc_id: int, username: str, request: Request, db: Session = Depends(get_db)):
+    admin_user = _require_admin(request)
+    return _user_response(request, db, doc_id, username, "documents", admin_user)
+
+
+@router.get("/archive/documents/{doc_id}/users/{username}", response_class=HTMLResponse)
+async def archive_user_attempts(doc_id: int, username: str, request: Request, db: Session = Depends(get_db)):
+    admin_user = _require_admin(request)
+    return _user_response(request, db, doc_id, username, "archive", admin_user)
 
 
 @router.get("/documents/{doc_id}/users/{username}/logs.json")
@@ -293,11 +446,11 @@ async def export_excel(
 # ---------------------------------------------------------------------------
 @router.delete("/documents/{doc_id}")
 async def delete_document(doc_id: int, request: Request, db: Session = Depends(get_db)):
-    _require_admin(request)
+    admin_user = _require_admin(request)
     doc = db.query(Document).filter(Document.id == doc_id).first()
     if not doc:
         raise HTTPException(404)
-    document_service.delete_document(db, doc)
+    document_service.delete_document(db, doc, deleted_by=admin_user)
     return {"ok": True}
 
 

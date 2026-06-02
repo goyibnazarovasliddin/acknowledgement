@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/static/css/style.css" />
 </head>
 <body>
+{% set base = '/admin/archive' if section == 'archive' else '/admin' %}
 <div class="admin-layout">
 
   <aside class="admin-sidebar">
@@ -19,8 +20,9 @@
     </div>
     <nav class="admin-nav">
       <div class="admin-nav-section" data-i18n="admin_management">Boshqaruv</div>
-      <a href="/admin/" class="active"><svg class="icon" viewBox="0 0 24 24"><path d="M9 2h6a1 1 0 0 1 1 1v1h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2V3a1 1 0 0 1 1-1z"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg> <span data-i18n="admin_documents">Hujjatlar</span></a>
+      <a href="/admin/" class="{% if section != 'archive' %}active{% endif %}"><svg class="icon" viewBox="0 0 24 24"><path d="M9 2h6a1 1 0 0 1 1 1v1h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2V3a1 1 0 0 1 1-1z"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg> <span data-i18n="admin_documents">Hujjatlar</span></a>
       <a href="/admin/upload"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> <span data-i18n="admin_upload">Yuklash</span></a>
+      <a href="/admin/archive" class="{% if section == 'archive' %}active{% endif %}"><svg class="icon" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg> <span data-i18n="admin_archive">Arxiv</span></a>
     </nav>
     <div class="sidebar-user">
       <div class="sidebar-user-avatar">{{ admin_user[0]|upper }}</div>
@@ -33,30 +35,30 @@
     <!-- Topbar -->
     <div class="admin-topbar">
       <div style="display:flex;align-items:center;gap:.85rem;">
-        <a href="/admin/" class="back-btn" data-i18n-title="admin_back">
+        <a href="{{ base }}" class="back-btn" data-i18n-title="admin_back">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M10 3L5 8l5 5"/>
           </svg>
         </a>
         <div>
-          <div style="font-size:.72rem;color:var(--gray-400);font-weight:500;letter-spacing:.04em;text-transform:uppercase;" data-i18n="admin_documents">Hujjatlar</div>
+          <div style="font-size:.72rem;color:var(--gray-400);font-weight:500;letter-spacing:.04em;text-transform:uppercase;" data-i18n="{% if section == 'archive' %}admin_archive{% else %}admin_documents{% endif %}">Hujjatlar</div>
           <h1 style="margin-top:.1rem;line-height:1.2;">{{ doc.title }}</h1>
         </div>
       </div>
       <div class="admin-topbar-actions">
-        <button class="lang-toggle lang-toggle-light">RU</button>
         <a href="/admin/documents/{{ doc.id }}/file" target="_blank" class="btn btn-ghost btn-sm">
           <svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           <span data-i18n="admin_view_file">Ko'rish</span>
         </a>
-        <a href="/admin/documents/{{ doc.id }}/export/csv?{% if filter_status %}status={{ filter_status }}&{% endif %}{% if filter_department %}department={{ filter_department }}{% endif %}"
+        <a id="export-csv" href="/admin/documents/{{ doc.id }}/export/csv"
            class="btn btn-ghost btn-sm">
           <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV
         </a>
-        <a href="/admin/documents/{{ doc.id }}/export/excel?{% if filter_status %}status={{ filter_status }}&{% endif %}{% if filter_department %}department={{ filter_department }}{% endif %}"
+        <a id="export-excel" href="/admin/documents/{{ doc.id }}/export/excel"
            class="btn btn-primary btn-sm">
           <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Excel
         </a>
+        <button class="lang-toggle lang-toggle-light">RU</button>
       </div>
     </div>
 
@@ -74,26 +76,31 @@
         </button>
       </div>
 
-      <!-- Filter -->
-      <form method="GET" action="/admin/documents/{{ doc.id }}">
-        <div class="filter-bar">
-          <select name="status" class="auto-submit-select">
+      <!-- Filter (AJAX — updates only the table, no page reload) -->
+      <div class="filter-bar">
+        <div class="select-wrap">
+          <select name="status" class="select-custom" id="filter-status">
             <option value="" {% if not filter_status %}selected{% endif %} data-i18n="admin_all_statuses">Barcha holatlar</option>
             {% for s in ack_statuses %}
-            <option value="{{ s.value }}" {% if filter_status == s.value %}selected{% endif %}>
-              {{ s.value }}
-            </option>
+            <option value="{{ s.value }}" {% if filter_status == s.value %}selected{% endif %} data-i18n="status_{{ s.value }}">{{ s.value }}</option>
             {% endfor %}
           </select>
-          <select name="department" class="auto-submit-select">
+          <svg class="select-arrow icon" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="select-wrap">
+          <select name="department" class="select-custom" id="filter-dept">
             <option value="" {% if not filter_department %}selected{% endif %} data-i18n="admin_all_depts">Barcha bo'limlar</option>
             {% for dept in departments %}
             <option value="{{ dept }}" {% if filter_department == dept %}selected{% endif %}>{{ dept }}</option>
             {% endfor %}
           </select>
-          <a href="/admin/documents/{{ doc.id }}" class="btn btn-ghost btn-sm" data-i18n="admin_reset">Tozalash</a>
+          <svg class="select-arrow icon" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-      </form>
+        <button type="button" id="filter-reset" class="btn btn-ghost btn-sm filter-reset">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <span data-i18n="admin_reset">Tozalash</span>
+        </button>
+      </div>
 
       <!-- Users table -->
       <div class="table-card">
@@ -120,7 +127,7 @@
             </thead>
             <tbody id="rows-body"
                    data-url="/admin/documents/{{ doc.id }}/logs.json?{% if filter_status %}status={{ filter_status }}&{% endif %}{% if filter_department %}department={{ filter_department }}{% endif %}"
-                   data-base="/admin/documents/{{ doc.id }}/users/">
+                   data-base="{{ base }}/documents/{{ doc.id }}/users/">
             {% for r in rows %}
               <tr class="row-link" data-username="{{ r.username }}">
                 <td>{{ loop.index }}</td>
@@ -138,7 +145,7 @@
                   {% endif %}
                 </td>
                 <td style="font-size:.8rem;white-space:nowrap;color:var(--gray-600);">
-                  {{ r.time.strftime("%Y-%m-%d %H:%M:%S") if r.time else "—" }}
+                  {{ r.time | localdt or "—" }}
                 </td>
                 <td style="font-size:.78rem;color:var(--gray-400);">{{ r.ip_address or "—" }}</td>
               </tr>
@@ -155,19 +162,34 @@
 </div>
 
 <script src="/static/js/i18n.js"></script>
-<script src="/static/js/admin.js"></script>
+<script src="/static/js/admin.js?v=2"></script>
 <script>
-  // Real-time refresh of the grouped users table
+  // Real-time + AJAX-filtered grouped users table (no full page reload)
   (function () {
     const body = document.getElementById("rows-body");
     if (!body) return;
-    const url  = body.dataset.url;
-    const base = body.dataset.base;
+    const base = body.dataset.base;                       // user drill-down base
+    const LOGS = "/admin/documents/{{ doc.id }}/logs.json";
+    const EXPORT = "/admin/documents/{{ doc.id }}/export/";
+    const DETAIL = "{{ base }}/documents/{{ doc.id }}";
 
+    const statusSel = document.getElementById("filter-status");
+    const deptSel   = document.getElementById("filter-dept");
+    const resetBtn  = document.getElementById("filter-reset");
+    const csvLink   = document.getElementById("export-csv");
+    const xlsLink   = document.getElementById("export-excel");
+
+    function query() {
+      const p = new URLSearchParams();
+      if (statusSel.value) p.set("status", statusSel.value);
+      if (deptSel.value)   p.set("department", deptSel.value);
+      return p.toString();
+    }
     function statusBadge(status) {
-      if (status === "ACKNOWLEDGED")
-        return '<span class="badge badge-green">' + I18n.t("status_ACKNOWLEDGED") + '</span>';
-      return '<span class="badge badge-warning">' + I18n.t("status_OPENED") + '</span>';
+      const ack = status === "ACKNOWLEDGED";
+      const key = ack ? "status_ACKNOWLEDGED" : "status_OPENED";
+      const cls = ack ? "badge-green" : "badge-warning";
+      return '<span class="badge ' + cls + '" data-i18n="' + key + '">' + I18n.t(key) + '</span>';
     }
     function esc(s) {
       return (s || "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[c]));
@@ -199,13 +221,35 @@
       });
     }
     async function poll() {
+      const q = query();
       try {
-        const res = await fetch(url, { credentials: "same-origin" });
+        const res = await fetch(LOGS + (q ? "?" + q : ""), { credentials: "same-origin" });
         if (res.ok) { const data = await res.json(); render(data.rows); }
       } catch (e) { /* keep last view */ }
     }
+    function syncControls() {
+      const q = query();
+      resetBtn.classList.toggle("show", !!(statusSel.value || deptSel.value));
+      csvLink.href = EXPORT + "csv" + (q ? "?" + q : "");
+      xlsLink.href = EXPORT + "excel" + (q ? "?" + q : "");
+      history.replaceState(null, "", DETAIL + (q ? "?" + q : ""));
+    }
+    function onFilterChange() { syncControls(); poll(); }
+
+    statusSel.addEventListener("change", onFilterChange);
+    deptSel.addEventListener("change", onFilterChange);
+    resetBtn.addEventListener("click", () => {
+      statusSel.value = ""; deptSel.value = "";
+      [statusSel, deptSel].forEach(s => { const w = s.closest(".select-wrap"); if (w && w._csRefresh) w._csRefresh(); });
+      onFilterChange();
+    });
+
     bindRows();
-    setInterval(poll, 4000);
+    syncControls();
+    setInterval(poll, 2000);
+    // refresh as soon as the tab/window regains focus
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
+    window.addEventListener("focus", poll);
   })();
 </script>
 </body>

@@ -94,9 +94,9 @@ def list_attempts(db: Session, document_id: int, ad_username: str) -> List[Docum
 
 def list_user_rows(db: Session, document_id: int) -> List[dict]:
     """
-    One row per user. Status = ACKNOWLEDGED if any attempt acknowledged,
-    else OPENED. Time = latest acknowledge time if acknowledged, else latest
-    open time. IP = that representative attempt's IP.
+    One row per user, representing that user's FIRST attempt (earliest open).
+    Status/time/IP come from that first attempt only — later attempts are seen
+    only in the per-user drill-down, never here.
     """
     rows = (
         db.query(DocumentLog)
@@ -110,37 +110,21 @@ def list_user_rows(db: Session, document_id: int) -> List[dict]:
         u = log.ad_username
         g = grouped.get(u)
         if g is None:
-            g = {
+            # first (earliest) attempt for this user — this is the shown row
+            acked = log.status == AckStatus.ACKNOWLEDGED
+            grouped[u] = {
                 "username": u,
                 "full_name": log.full_name,
                 "department": log.department,
                 "position": log.position,
-                "attempts": 0,
-                "acknowledged": False,
-                "status": AckStatus.OPENED,
-                "time": log.opened_at,
+                "attempts": 1,
+                "status": log.status,
+                "time": (log.acknowledged_at or log.opened_at) if acked else log.opened_at,
                 "ip_address": log.ip_address,
+                "_first_opened": log.opened_at,
             }
-            grouped[u] = g
+        else:
+            g["attempts"] += 1
 
-        g["attempts"] += 1
-        # keep latest identity fields
-        g["full_name"] = log.full_name or g["full_name"]
-        g["department"] = log.department or g["department"]
-        g["position"] = log.position or g["position"]
-
-        if log.status == AckStatus.ACKNOWLEDGED:
-            ack_t = log.acknowledged_at or log.opened_at
-            if not g["acknowledged"] or (g["time"] and ack_t and ack_t > g["time"]) or not g["time"]:
-                g["acknowledged"] = True
-                g["status"] = AckStatus.ACKNOWLEDGED
-                g["time"] = ack_t
-                g["ip_address"] = log.ip_address
-        elif not g["acknowledged"]:
-            # still only opened — track latest open
-            if not g["time"] or (log.opened_at and log.opened_at > g["time"]):
-                g["time"] = log.opened_at
-                g["ip_address"] = log.ip_address
-
-    # newest activity first
-    return sorted(grouped.values(), key=lambda r: r["time"] or datetime.min, reverse=True)
+    # most-recent first attempt on top
+    return sorted(grouped.values(), key=lambda r: r["_first_opened"] or datetime.min, reverse=True)

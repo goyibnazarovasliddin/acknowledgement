@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/static/css/style.css" />
 </head>
 <body>
+{% set base = '/admin/archive' if section == 'archive' else '/admin' %}
 <div class="admin-layout">
 
   <aside class="admin-sidebar">
@@ -19,8 +20,9 @@
     </div>
     <nav class="admin-nav">
       <div class="admin-nav-section" data-i18n="admin_management">Boshqaruv</div>
-      <a href="/admin/" class="active"><svg class="icon" viewBox="0 0 24 24"><path d="M9 2h6a1 1 0 0 1 1 1v1h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2V3a1 1 0 0 1 1-1z"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg> <span data-i18n="admin_documents">Hujjatlar</span></a>
+      <a href="/admin/" class="{% if section != 'archive' %}active{% endif %}"><svg class="icon" viewBox="0 0 24 24"><path d="M9 2h6a1 1 0 0 1 1 1v1h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2V3a1 1 0 0 1 1-1z"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg> <span data-i18n="admin_documents">Hujjatlar</span></a>
       <a href="/admin/upload"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> <span data-i18n="admin_upload">Yuklash</span></a>
+      <a href="/admin/archive" class="{% if section == 'archive' %}active{% endif %}"><svg class="icon" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg> <span data-i18n="admin_archive">Arxiv</span></a>
     </nav>
     <div class="sidebar-user">
       <div class="sidebar-user-avatar">{{ admin_user[0]|upper }}</div>
@@ -32,7 +34,7 @@
   <main class="admin-main">
     <div class="admin-topbar">
       <div style="display:flex;align-items:center;gap:.85rem;">
-        <a href="/admin/documents/{{ doc.id }}" class="back-btn">
+        <a href="{{ base }}/documents/{{ doc.id }}" class="back-btn">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M10 3L5 8l5 5"/>
           </svg>
@@ -89,9 +91,9 @@
                     <span class="badge badge-warning" data-i18n="status_OPENED">Hujjat ochilgan</span>
                   {% endif %}
                 </td>
-                <td style="font-size:.8rem;white-space:nowrap;color:var(--gray-600);">{{ a.opened_at.strftime("%Y-%m-%d %H:%M:%S") if a.opened_at else "—" }}</td>
+                <td style="font-size:.8rem;white-space:nowrap;color:var(--gray-600);">{{ a.opened_at | localdt or "—" }}</td>
                 <td style="font-size:.8rem;white-space:nowrap;">
-                  {% if a.acknowledged_at %}<span style="color:var(--green-700);font-weight:600;">{{ a.acknowledged_at.strftime("%Y-%m-%d %H:%M:%S") }}</span>{% else %}—{% endif %}
+                  {% if a.acknowledged_at %}<span style="color:var(--green-700);font-weight:600;">{{ a.acknowledged_at | localdt }}</span>{% else %}—{% endif %}
                 </td>
                 <td style="font-size:.78rem;color:var(--gray-400);">{{ a.ip_address or "—" }}</td>
               </tr>
@@ -108,15 +110,17 @@
 </div>
 
 <script src="/static/js/i18n.js"></script>
-<script src="/static/js/admin.js"></script>
+<script src="/static/js/admin.js?v=2"></script>
 <script>
   (function () {
     const body = document.getElementById("rows-body");
     if (!body) return;
     const url = body.dataset.url;
     function statusBadge(s) {
-      if (s === "ACKNOWLEDGED") return '<span class="badge badge-green">' + I18n.t("status_ACKNOWLEDGED") + '</span>';
-      return '<span class="badge badge-warning">' + I18n.t("status_OPENED") + '</span>';
+      const ack = s === "ACKNOWLEDGED";
+      const key = ack ? "status_ACKNOWLEDGED" : "status_OPENED";
+      const cls = ack ? "badge-green" : "badge-warning";
+      return '<span class="badge ' + cls + '" data-i18n="' + key + '">' + I18n.t(key) + '</span>';
     }
     function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
     function render(rows) {
@@ -134,7 +138,9 @@
     async function poll() {
       try { const res = await fetch(url, { credentials: "same-origin" }); if (res.ok) { const d = await res.json(); render(d.rows); } } catch (e) {}
     }
-    setInterval(poll, 4000);
+    setInterval(poll, 2000);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
+    window.addEventListener("focus", poll);
   })();
 </script>
 </body>

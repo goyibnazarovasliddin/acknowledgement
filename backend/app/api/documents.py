@@ -29,8 +29,11 @@ from app.services import document_service, log_service
 
 logger = logging.getLogger(__name__)
 
+from app.timeutil import fmt_local
+
 router = APIRouter()
 templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
+templates.env.filters["localdt"] = fmt_local
 
 TEMPLATE_CTX = {
     "scroll_threshold": settings.SCROLL_THRESHOLD,

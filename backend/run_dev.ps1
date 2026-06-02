@@ -10,4 +10,4 @@ $env:PYTHONPATH     = (Resolve-Path ".").Path
 
 New-Item -ItemType Directory -Force -Path "uploads" | Out-Null
 
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000

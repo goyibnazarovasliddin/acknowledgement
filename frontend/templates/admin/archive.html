@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arxiv — Agrobank ACK</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+<div class="admin-layout">
+
+  <aside class="admin-sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-logo">
+        <div class="sidebar-brand-icon" style="background:#fff;padding:3px;"><img src="/static/img/agrobank-logo.webp" alt="Agrobank" style="width:100%;height:100%;object-fit:contain;" /></div>
+        <span class="sidebar-brand-name">Agrobank</span>
+      </div>
+      <div class="sidebar-brand-desc">ACK System</div>
+    </div>
+    <nav class="admin-nav">
+      <div class="admin-nav-section" data-i18n="admin_management">Boshqaruv</div>
+      <a href="/admin/"><svg class="icon" viewBox="0 0 24 24"><path d="M9 2h6a1 1 0 0 1 1 1v1h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2V3a1 1 0 0 1 1-1z"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg> <span data-i18n="admin_documents">Hujjatlar</span></a>
+      <a href="/admin/upload"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> <span data-i18n="admin_upload">Yuklash</span></a>
+      <a href="/admin/archive" class="active"><svg class="icon" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg> <span data-i18n="admin_archive">Arxiv</span></a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar">{{ admin_user[0]|upper }}</div>
+      <span class="sidebar-user-name">{{ admin_user }}</span>
+      <a href="/admin/logout" class="sidebar-logout" data-i18n="admin_logout">Chiqish</a>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1 data-i18n="admin_archive">Arxiv</h1>
+      <div class="admin-topbar-actions">
+        <button class="lang-toggle lang-toggle-light">RU</button>
+      </div>
+    </div>
+
+    <div class="admin-content">
+      <div class="table-card">
+        <div class="table-header">
+          <h2 data-i18n="admin_archive_list">Arxivlangan hujjatlar</h2>
+        </div>
+        {% if doc_stats %}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th data-i18n="admin_title_col">Sarlavha</th>
+                <th data-i18n="admin_file">Fayl</th>
+                <th data-i18n="admin_uploaded">Yuklangan</th>
+                <th data-i18n="admin_stats_ack">Tanishib chiqdi</th>
+                <th data-i18n="admin_view_file">Ko'rish</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for item in doc_stats %}
+              <tr class="row-link" data-href="/admin/archive/documents/{{ item.doc.id }}">
+                <td style="color:var(--gray-400);font-size:.78rem;">{{ item.doc.id }}</td>
+                <td>
+                  <span style="font-weight:600;color:var(--green-700);">{{ item.doc.title }}</span>
+                </td>
+                <td style="font-size:.8rem;color:var(--gray-600);">{{ item.doc.original_filename }}</td>
+                <td style="font-size:.82rem;white-space:nowrap;color:var(--gray-600);">{{ item.doc.uploaded_at | localdt('%Y-%m-%d') }}</td>
+                <td>
+                  <span class="badge {% if item.ack_count > 0 %}badge-green{% else %}badge-gray{% endif %}">
+                    {{ item.ack_count }} / {{ item.total_count }}
+                  </span>
+                </td>
+                <td>
+                  <a href="/admin/documents/{{ item.doc.id }}/file" target="_blank"
+                     class="btn btn-ghost btn-sm"><svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> <span data-i18n="admin_view_file">Ko'rish</span></a>
+                </td>
+                <td style="white-space:nowrap;display:flex;gap:.4rem;">
+                  <button class="btn btn-ghost btn-sm btn-restore-doc" data-doc-id="{{ item.doc.id }}" data-doc-title="{{ item.doc.title }}" data-i18n-title="admin_restore"><svg class="icon" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+                  <button class="btn btn-danger btn-sm btn-delete-doc" data-doc-id="{{ item.doc.id }}" data-doc-title="{{ item.doc.title }}" data-i18n-title="delete_title"><svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div style="padding:3rem;text-align:center;color:var(--gray-600);">
+          <div style="color:var(--gray-400);margin-bottom:.75rem;display:flex;justify-content:center;">
+            <svg class="icon" style="width:2.25rem;height:2.25rem;" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+          </div>
+          <p data-i18n="admin_no_archive">Arxivda hujjat yo'q.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="/static/js/i18n.js"></script>
+<script src="/static/js/dialog.js?v=2"></script>
+<script src="/static/js/admin.js?v=2"></script>
+</body>
+</html>

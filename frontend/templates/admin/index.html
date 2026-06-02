@@ -21,6 +21,7 @@
       <div class="admin-nav-section" data-i18n="admin_management">Boshqaruv</div>
       <a href="/admin/" class="active"><svg class="icon" viewBox="0 0 24 24"><path d="M9 2h6a1 1 0 0 1 1 1v1h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2V3a1 1 0 0 1 1-1z"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg> <span data-i18n="admin_documents">Hujjatlar</span></a>
       <a href="/admin/upload"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> <span data-i18n="admin_upload">Yuklash</span></a>
+      <a href="/admin/archive"><svg class="icon" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg> <span data-i18n="admin_archive">Arxiv</span></a>
     </nav>
     <div class="sidebar-user">
       <div class="sidebar-user-avatar">{{ admin_user[0]|upper }}</div>
@@ -34,29 +35,54 @@
     <div class="admin-topbar">
       <h1 data-i18n="admin_documents">Hujjatlar</h1>
       <div class="admin-topbar-actions">
-        <button class="lang-toggle lang-toggle-light">RU</button>
         <a href="/admin/upload" class="btn btn-primary btn-sm">+ <span data-i18n="admin_upload">Yuklash</span></a>
+        <button class="lang-toggle lang-toggle-light">RU</button>
       </div>
     </div>
 
     <div class="admin-content">
 
-      <!-- Stats -->
-      {% set total_docs  = doc_stats | length %}
-      {% set total_ack   = doc_stats | sum(attribute='ack_count') %}
-      {% set total_users = doc_stats | sum(attribute='total_count') %}
+      <!-- KPI cards -->
       <div class="stats-grid">
         <div class="stat-card">
           <span class="stat-card-label" data-i18n="admin_stats_total">Jami hujjatlar</span>
-          <span class="stat-card-value">{{ total_docs }}</span>
+          <span class="stat-card-value">{{ stats.total_docs }}</span>
+        </div>
+        <div class="stat-card" style="border-left-color:var(--blue);">
+          <span class="stat-card-label" data-i18n="admin_stats_ad_users">AD jami xodimlar</span>
+          <span class="stat-card-value" style="color:var(--blue);">{{ stats.total_ad_users }}</span>
+        </div>
+        <div class="stat-card" style="border-left-color:#7c3aed;">
+          <span class="stat-card-label" data-i18n="admin_stats_depts">Tarkibiy tuzilmalar</span>
+          <span class="stat-card-value" style="color:#7c3aed;">{{ stats.total_ad_depts }}</span>
+        </div>
+        <div class="stat-card" style="border-left-color:var(--warning);">
+          <span class="stat-card-label" data-i18n="admin_stats_system_users">Tizimdan foydalanganlar</span>
+          <span class="stat-card-value" style="color:var(--warning);">{{ stats.system_users }}</span>
         </div>
         <div class="stat-card">
-          <span class="stat-card-label" data-i18n="admin_stats_ack">Tanishib chiqqanlar</span>
-          <span class="stat-card-value" style="color:var(--green-600);">{{ total_ack }}</span>
+          <span class="stat-card-label" data-i18n="admin_stats_ack_employees">Tanishgan xodimlar</span>
+          <span class="stat-card-value" style="color:var(--green-600);">{{ stats.ack_users }}</span>
         </div>
-        <div class="stat-card">
-          <span class="stat-card-label" data-i18n="admin_stats_users">Jami foydalanuvchilar</span>
-          <span class="stat-card-value">{{ total_users }}</span>
+        <div class="stat-card" style="border-left-color:#0891b2;">
+          <span class="stat-card-label" data-i18n="admin_stats_coverage">Qamrov foizi</span>
+          <span class="stat-card-value" style="color:#0891b2;">{{ stats.coverage }}%</span>
+        </div>
+      </div>
+
+      <!-- Analytics charts -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title" data-i18n="chart_donut">Tanishish holati (AD bo'yicha)</div>
+          <div class="chart-box"><canvas id="chart-donut"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title" data-i18n="chart_dept">Bo'limlar bo'yicha tanishgan</div>
+          <div class="chart-box"><canvas id="chart-dept"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title" data-i18n="chart_daily">So'nggi 30 kun — kunlik tanishish</div>
+          <div class="chart-box"><canvas id="chart-daily"></canvas></div>
         </div>
       </div>
 
@@ -90,7 +116,7 @@
                   </a>
                 </td>
                 <td style="font-size:.8rem;color:var(--gray-600);">{{ item.doc.original_filename }}</td>
-                <td style="font-size:.82rem;white-space:nowrap;color:var(--gray-600);">{{ item.doc.uploaded_at.strftime("%Y-%m-%d") }}</td>
+                <td style="font-size:.82rem;white-space:nowrap;color:var(--gray-600);">{{ item.doc.uploaded_at | localdt }}</td>
                 <td>
                   <span class="badge {% if item.ack_count > 0 %}badge-green{% else %}badge-gray{% endif %}">
                     {{ item.ack_count }} / {{ item.total_count }}
@@ -108,7 +134,7 @@
                   </button>
                 </td>
                 <td>
-                  <button class="btn btn-danger btn-sm btn-delete-doc" data-doc-id="{{ item.doc.id }}" data-doc-title="{{ item.doc.title }}"><svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+                  <button class="btn btn-ghost btn-sm btn-archive-doc" data-doc-id="{{ item.doc.id }}" data-doc-title="{{ item.doc.title }}" data-i18n-title="admin_archive"><svg class="icon" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></button>
                 </td>
               </tr>
             {% endfor %}
@@ -131,7 +157,12 @@
 </div>
 
 <script src="/static/js/i18n.js"></script>
-<script src="/static/js/dialog.js"></script>
-<script src="/static/js/admin.js"></script>
+<script src="/static/js/dialog.js?v=2"></script>
+<script src="/static/js/admin.js?v=2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  window.CHART_DATA = {{ charts | tojson }};
+</script>
+<script src="/static/js/charts.js"></script>
 </body>
 </html>

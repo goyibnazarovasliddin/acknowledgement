@@ -10,7 +10,6 @@
         <img src="/static/img/agrobank-logo.webp" alt="Agrobank" style="width:30px;height:30px;object-fit:contain;border-radius:.4rem;background:#fff;padding:2px;" />
         <span style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green-700);">Agrobank</span>
       </div>
-      <button class="lang-toggle lang-toggle-light">RU</button>
     </div>
 
     <div class="success-icon">
@@ -38,7 +37,7 @@
       {% if log.acknowledged_at %}
       <div style="font-size:.78rem;color:var(--gray-400);margin-top:.35rem;display:flex;align-items:center;gap:.35rem;">
         <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        {{ log.acknowledged_at.strftime("%Y-%m-%d %H:%M:%S") }} UTC
+        {{ log.acknowledged_at | localdt }}
       </div>
       {% endif %}
     </div>

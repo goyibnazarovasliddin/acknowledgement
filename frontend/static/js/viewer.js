@@ -177,16 +177,18 @@
 
     confirmAckBtn.addEventListener("click", () => {
       confirmAckBtn.disabled = true;
-      const body = new URLSearchParams({ attempt_id: cfg.attemptId });
-      fetch(`/d/${cfg.token}/acknowledge`, {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body,
-      })
-        .then((r) => { if (r.ok) return r.text(); throw r.status; })
-        .then((html) => { document.open(); document.write(html); document.close(); })
-        .catch(() => { confirmAckBtn.disabled = false; });
+      // Full-page POST navigation so the final page loads normally and i18n
+      // applies the user's selected language (document.write would skip it).
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = `/d/${cfg.token}/acknowledge`;
+      const inp = document.createElement("input");
+      inp.type = "hidden";
+      inp.name = "attempt_id";
+      inp.value = cfg.attemptId;
+      form.appendChild(inp);
+      document.body.appendChild(form);
+      form.submit();
     });
 
     history.pushState(null, "", location.href);

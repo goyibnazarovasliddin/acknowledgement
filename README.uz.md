@@ -4,23 +4,25 @@
 
 Agrobank xodimlari uchun ichki hujjatlarni tasdiqlash tizimi.
 
-Xodim unikal havola orqali kiradi, AD identifikatsiyasini tasdiqlaydi, hujjatni o'qiydi va tasdiqlaydi. Admin kim tasdiqlaganini va kimlar hali o'qimaganini kuzatib boradi.
+Xodim unikal havola orqali kiradi, o'z AD login-parolini kiritadi, ko'rsatilgan ma'lumotni tasdiqlaydi, hujjatni o'qiydi va tanishib chiqadi. Admin kim tanishganini va kimlar hali tanishmaganini real vaqtda kuzatib boradi.
 
 ## Imkoniyatlar
 
-- Active Directory orqali SSO (Kerberos/NTLM — IIS yoki Apache `REMOTE_USER` headeri)
-- LDAP orqali foydalanuvchi ma'lumotlarini olish (ism, bo'lim, email)
-- Scroll va vaqt nazorati bilan PDF ko'rish
-- Admin panel: hujjat yuklash, tasdiqlashlarni kuzatish, CSV/Excel eksport
-- Har bir ochish, tasdiqlash va tasdiq hodisasining audit logi
-- Production da PostgreSQL, local dev da SQLite
+- **AD login** — foydalanuvchi o'z AD login + parolini kiritadi (LDAP bind). SSO/Kerberos shart emas.
+- **Shaxsni tasdiqlash** — login'dan keyin FISH, tarkibiy tuzilma va lavozim ko'rsatiladi ("Bu sizmi?"). Rad etilsa qayta login so'raladi; 3 marta xato bo'lsa "admin bilan bog'laning" deyiladi.
+- **Hujjat ko'rish** — PDF inline, scroll (≥ chegaradan) va minimal vaqt o'tmaguncha "Tanishib chiqdim" ochilmaydi. Scroll talabi faqat PDF uchun.
+- **Urinish-asosli hisobot** — har ochish alohida urinish. Hujjat jadvalida har user uchun bitta qator (eng birinchi urinish); user ustiga bosilsa barcha urinishlari chiqadi. Real vaqtda yangilanadi.
+- **Admin analitika** — KPI cardlar (AD jami xodimlar, tarkibiy tuzilmalar, qamrov %) va grafiklar (tanishgan/tanishmagan, bo'limlar bo'yicha, 30 kunlik trend).
+- **Arxiv + deep arxiv** — hujjatni arxivlash (yashirin, data saqlanadi) va tiklash. Arxivdan o'chirilsa to'liq snapshot yashirin `deep_archive` jadvalga ko'chadi — DB darajasida hech narsa yo'qolmaydi.
+- **Eksport** — CSV / Excel (openpyxl), har hujjat uchun.
+- **i18n** — O'zbek / Rus. Barcha vaqtlar qat'iy displey zonasida (Toshkent/Ashxabod, UTC+5).
 
 ## Arxitektura
 
 ```
-Brauzer → IIS/Apache (Kerberos auth) → Nginx (SSL) → FastAPI → PostgreSQL
-                                                           ↓
-                                               Active Directory (LDAP)
+Brauzer → Nginx (SSL) → FastAPI → PostgreSQL
+                           ↓
+               Active Directory (LDAP bind + lookup)
 ```
 
 ## Tezkor ishga tushirish (Production)
@@ -53,7 +55,9 @@ pip install -r requirements.txt
 bash run_dev.sh
 ```
 
-`DEV_MODE=true` da `X-Dev-User: DOMAIN\username` headeri yoki `/dev/` sahifasi orqali test qilish mumkin.
+`DEV_MODE=true` da (real AD yo'q) istalgan havolada **istalgan username** + parol **`dev`** bilan kirib AD foydalanuvchisini simulyatsiya qilish mumkin. Admin panel: `/admin/` (default `admin` / `admin123` — `.env` orqali o'zgartiring).
+
+> **Production:** `DEV_MODE=false` qiling. Shunda dev login bypass o'chadi va barcha login real LDAP bind orqali o'tadi.
 
 ## Texnologiyalar
 
@@ -61,8 +65,8 @@ bash run_dev.sh
 |--------|-------------|
 | Backend | FastAPI + SQLAlchemy |
 | Ma'lumotlar bazasi | PostgreSQL 15 (dev uchun SQLite) |
-| Autentifikatsiya | Active Directory LDAP (`ldap3`) |
+| Autentifikatsiya | Active Directory LDAP bind (`ldap3`) |
 | Session | Imzolangan cookie (`itsdangerous`) |
-| Frontend | Jinja2 shablonlar + vanilla JS |
+| Frontend | Jinja2 shablonlar + vanilla JS, Chart.js |
 | Proxy | Nginx (SSL termination) |
 | Runtime | Docker + Docker Compose |

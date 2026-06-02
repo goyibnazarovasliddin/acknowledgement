@@ -33,6 +33,10 @@ class Settings(BaseSettings):
 
     DEV_MODE: bool = False
 
+    # Display timezone offset from UTC (Asia/Tashkent & Ashgabat = +5, no DST).
+    # DB stores UTC; times are converted to this offset for display/export.
+    TZ_OFFSET_HOURS: int = 5
+
     class Config:
         env_file = ".env"
 

@@ -30,6 +30,19 @@ app = FastAPI(
 
 app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR / "static")), name="static")
 
+
+@app.middleware("http")
+async def no_cache_static(request, call_next):
+    """Always revalidate static assets so updated JS/CSS reach users after a
+    redeploy (no stale cache), in both dev and production."""
+    response = await call_next(request)
+    if request.url.path.startswith("/static"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
+
 app.include_router(doc_router)
 app.include_router(admin_router)
 

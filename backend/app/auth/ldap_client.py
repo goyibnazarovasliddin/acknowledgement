@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Optional
 
 from ldap3 import Server, Connection, ALL, SIMPLE, SUBTREE
@@ -9,6 +10,15 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 _ATTRIBUTES = ["displayName", "department", "title", "mail", "sAMAccountName"]
+
+# Active (non-disabled) person accounts. The bit-AND rule filters out disabled.
+_ALL_USERS_FILTER = (
+    "(&(objectCategory=person)(objectClass=user)"
+    "(!(userAccountControl:1.2.840.113556.1.4.803:=2)))"
+)
+
+_DIR_CACHE: dict = {}
+_DIR_CACHE_TTL = 1800  # 30 min — AD-wide scan is heavy, cache it
 
 
 class LDAPClient:
@@ -112,6 +122,54 @@ class LDAPClient:
         except LDAPException as exc:
             logger.error("LDAP error for %s: %s", sam, exc)
             return None
+
+    # ------------------------------------------------------------------
+    # Directory-wide stats (total users, departments) — cached
+    # ------------------------------------------------------------------
+    def get_directory_stats(self) -> dict:
+        now = time.time()
+        cached = _DIR_CACHE.get("dir")
+        if cached and now - cached[0] < _DIR_CACHE_TTL:
+            return cached[1]
+        data = self._fetch_directory_stats()
+        _DIR_CACHE["dir"] = (now, data)
+        return data
+
+    def _fetch_directory_stats(self) -> dict:
+        if settings.DEV_MODE:
+            return {
+                "total_users": 250,
+                "departments": [
+                    "Buxgalteriya", "Axborot texnologiyalari", "Kadrlar bo'limi",
+                    "Yuridik departament", "Operatsion boshqarma", "Xavfsizlik xizmati",
+                ],
+            }
+        try:
+            conn = self._service_connect()
+            entries = conn.extend.standard.paged_search(
+                search_base=settings.LDAP_BASE_DN,
+                search_filter=_ALL_USERS_FILTER,
+                search_scope=SUBTREE,
+                attributes=["department"],
+                paged_size=500,
+                generator=True,
+            )
+            total = 0
+            depts = set()
+            for e in entries:
+                if e.get("type") != "searchResEntry":
+                    continue
+                total += 1
+                d = e["attributes"].get("department")
+                if isinstance(d, list):
+                    d = d[0] if d else None
+                if d:
+                    depts.add(str(d))
+            conn.unbind()
+            return {"total_users": total, "departments": sorted(depts)}
+        except LDAPException as exc:
+            logger.error("LDAP directory stats failed: %s", exc)
+            return {"total_users": 0, "departments": []}
 
     # ------------------------------------------------------------------
     # Internal
