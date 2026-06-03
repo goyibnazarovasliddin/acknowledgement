@@ -24,18 +24,26 @@ def _fmt_dt(dt: datetime | None) -> str:
     return fmt_local(dt)
 
 
+def _safe_cell(value: str) -> str:
+    """Neutralize spreadsheet formula injection: a leading =, +, -, @, tab or
+    CR makes Excel/Sheets evaluate the cell. Prefix such text with a quote."""
+    if isinstance(value, str) and value and value[0] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + value
+    return value
+
+
 def _row(idx: int, log: DocumentLog) -> list:
     return [
         idx,
-        log.full_name or "",
-        log.ad_username or "",
-        log.department or "",
-        log.position or "",
-        log.email or "",
+        _safe_cell(log.full_name or ""),
+        _safe_cell(log.ad_username or ""),
+        _safe_cell(log.department or ""),
+        _safe_cell(log.position or ""),
+        _safe_cell(log.email or ""),
         _STATUS_LABELS.get(log.status, log.status),
         _fmt_dt(log.opened_at),
         _fmt_dt(log.acknowledged_at),
-        log.ip_address or "",
+        _safe_cell(log.ip_address or ""),
     ]
 
 

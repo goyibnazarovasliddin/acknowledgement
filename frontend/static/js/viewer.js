@@ -109,8 +109,7 @@
 
   async function initPdfViewer() {
     const lib = window["pdfjs-dist/build/pdf"];
-    lib.GlobalWorkerOptions.workerSrc =
-      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    lib.GlobalWorkerOptions.workerSrc = "/static/vendor/pdf.worker.min.js";
 
     pdfDoc     = await lib.getDocument(`/d/${cfg.token}/file`).promise;
     totalPages = pdfDoc.numPages;

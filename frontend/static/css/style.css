@@ -407,17 +407,25 @@ body {
   padding: 1.5rem 1.25rem 1.25rem;
   border-bottom: 1px solid rgba(255,255,255,.1);
   display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-.sidebar-brand-logo {
-  display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 0.6rem;
-  margin-bottom: 0.25rem;
 }
+.sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.13rem;
+  line-height: 1.2;
+  min-width: 0;
+}
+.sidebar-brand-text .sidebar-brand-name { line-height: 1.15; }
+.sidebar-brand-text .sidebar-brand-desc { line-height: 1.15; }
+
+/* User-facing brand subtitle under "Agrobank" — small vertical breathing room */
+.brand-sub { margin-top: 0.16rem; }
 .sidebar-brand-icon {
   width: 32px; height: 32px;
+  flex-shrink: 0;
   background: rgba(255,255,255,.15);
   border-radius: var(--radius-sm);
   display: flex; align-items: center; justify-content: center;
@@ -433,7 +441,46 @@ body {
 .sidebar-brand-desc {
   font-size: 0.72rem;
   opacity: 0.55;
-  padding-left: 0.25rem;
+}
+
+/* Prominent document-name banner (user-facing pages) */
+.doc-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: var(--green-50);
+  border: 1px solid var(--green-100);
+  border-left: 4px solid var(--green-600);
+  border-radius: 0.6rem;
+  padding: 0.7rem 0.95rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+.doc-banner-icon {
+  flex-shrink: 0;
+  width: 38px; height: 38px;
+  border-radius: 0.5rem;
+  background: var(--green-100);
+  color: var(--green-700);
+  display: flex; align-items: center; justify-content: center;
+}
+.doc-banner-icon .icon { width: 1.25rem; height: 1.25rem; }
+.doc-banner-text { min-width: 0; }
+.doc-banner-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--green-700);
+  opacity: 0.85;
+}
+.doc-banner-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--green-800);
+  margin-top: 0.1rem;
+  word-break: break-word;
 }
 .admin-nav { padding: 0.75rem 0; flex: 1; }
 .admin-nav-section {

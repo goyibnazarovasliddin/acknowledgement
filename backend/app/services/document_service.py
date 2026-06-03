@@ -1,7 +1,6 @@
 import os
 import json
 import uuid
-import mimetypes
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -15,9 +14,31 @@ from app.models import Document, DeepArchive
 UPLOAD_DIR = Path(settings.UPLOAD_DIR)
 MAX_BYTES = settings.MAX_FILE_SIZE_MB * 1024 * 1024
 
+# Allowed upload types → server-decided MIME (never trust the client's
+# Content-Type). Anything else is rejected. PDFs render inline in the viewer;
+# the others are downloaded.
+_ALLOWED_TYPES = {
+    ".pdf": "application/pdf",
+    ".doc": "application/msword",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".xls": "application/vnd.ms-excel",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".ppt": "application/vnd.ms-powerpoint",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+}
+
 
 def _ensure_upload_dir():
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _safe_original_name(raw: Optional[str], ext: str) -> str:
+    """Keep only the basename, strip control/quote/path chars — prevents
+    Content-Disposition header injection when the file is served back."""
+    base = Path(raw or "").name
+    cleaned = "".join(c for c in base if c.isprintable() and c not in '"\\/\r\n')
+    cleaned = cleaned.strip() or f"document{ext}"
+    return cleaned[:255]
 
 
 async def save_document(
@@ -28,21 +49,29 @@ async def save_document(
 ) -> Document:
     _ensure_upload_dir()
 
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in _ALLOWED_TYPES:
+        raise HTTPException(
+            415,
+            f"Unsupported file type '{ext or '?'}'. Allowed: {', '.join(sorted(_ALLOWED_TYPES))}",
+        )
+
     content = await file.read()
+    if not content:
+        raise HTTPException(400, "Empty file")
     if len(content) > MAX_BYTES:
         raise HTTPException(413, f"File too large (max {settings.MAX_FILE_SIZE_MB} MB)")
 
-    ext = Path(file.filename).suffix
     stored_name = f"{uuid.uuid4().hex}{ext}"
     dest = UPLOAD_DIR / stored_name
     dest.write_bytes(content)
 
-    mime = file.content_type or mimetypes.guess_type(file.filename)[0] or "application/octet-stream"
+    mime = _ALLOWED_TYPES[ext]  # server-decided, not the client-supplied header
 
     doc = Document(
         title=title,
         filename=stored_name,
-        original_filename=file.filename,
+        original_filename=_safe_original_name(file.filename, ext),
         mime_type=mime,
         file_size=len(content),
         uploaded_by=uploaded_by,

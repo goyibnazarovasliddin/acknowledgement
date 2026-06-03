@@ -3,8 +3,7 @@
 
 {% block head_extra %}
 {% if doc.mime_type == "application/pdf" %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="/static/vendor/pdf.min.js"></script>
 {% endif %}
 {% endblock %}
 
@@ -16,7 +15,10 @@
     <div class="viewer-bar-inner" style="gap:1rem;">
       <div style="display:flex;align-items:center;gap:.6rem;padding-right:.85rem;border-right:1px solid rgba(255,255,255,.2);">
         <img src="/static/img/agrobank-logo.webp" alt="Agrobank" style="width:26px;height:26px;object-fit:contain;border-radius:.35rem;background:#fff;padding:2px;" />
-        <span style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.8;">Agrobank</span>
+        <div style="line-height:1.05;">
+          <span style="display:block;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.8;">Agrobank</span>
+          <span style="display:block;font-size:.58rem;opacity:.6;white-space:nowrap;" class="brand-sub" data-i18n="brand_subtitle">Hujjatlar bilan tanishish tizimi</span>
+        </div>
       </div>
       <span class="viewer-toolbar-title">{{ doc.title }}</span>
       <a href="/d/{{ doc.share_token }}/file" download="{{ doc.original_filename }}"

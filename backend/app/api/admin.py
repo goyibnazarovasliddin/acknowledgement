@@ -26,6 +26,7 @@ from sqlalchemy.orm import Session
 from app.auth.ldap_client import ldap_client
 from app.auth.session import clear_session, create_session, get_session_user
 from app.config import settings
+from app.security import login_blocked, record_login_failure, reset_login, verify_admin
 from app.database import get_db
 from app.models import AckStatus, Document, DocumentLog
 from app.services import document_service, export_service, log_service
@@ -62,16 +63,35 @@ async def login_form(request: Request):
     return templates.TemplateResponse("admin/login.html", {"request": request, "error": None})
 
 
+def _login_ip(request: Request) -> str:
+    # Trust only the proxy-set X-Real-IP (nginx sets it to the real client);
+    # fall back to the socket peer. Never the client-spoofable X-Forwarded-For.
+    return request.headers.get("X-Real-IP") or (request.client.host if request.client else "")
+
+
 @router.post("/login", response_class=HTMLResponse)
 async def login_post(
     request: Request,
     username: str = Form(...),
     password: str = Form(...),
 ):
-    if username == settings.ADMIN_USERNAME and password == settings.ADMIN_PASSWORD:
+    ip = _login_ip(request)
+    if login_blocked(ip):
+        logger.warning("Admin login locked out for %s (too many failures)", ip)
+        return templates.TemplateResponse(
+            "admin/login.html",
+            {"request": request, "error": "Juda ko'p urinish. Birozdan so'ng qayta urining."},
+            status_code=429,
+        )
+
+    if verify_admin(username, password):
+        reset_login(ip)
         response = RedirectResponse("/admin/", status_code=302)
-        create_session(response, username)
+        create_session(response, settings.ADMIN_USERNAME)
         return response
+
+    record_login_failure(ip)
+    logger.warning("Admin login failed for %r from %s", username, ip)
     return templates.TemplateResponse(
         "admin/login.html",
         {"request": request, "error": "Login yoki parol noto'g'ri"},
@@ -115,11 +135,19 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     total_ad_users = dir_stats["total_users"]
     total_ad_depts = len(dir_stats["departments"])
 
+    # Only non-archived documents feed the KPI cards and charts.
+    active_ids = db.query(Document.id).filter(Document.archived == False)
+
     total_docs = len(docs)
-    system_users = db.query(DocumentLog.ad_username).distinct().count()
+    system_users = (
+        db.query(DocumentLog.ad_username)
+        .filter(DocumentLog.document_id.in_(active_ids))
+        .distinct()
+        .count()
+    )
     ack_users = (
         db.query(DocumentLog.ad_username)
-        .filter(DocumentLog.status == AckStatus.ACKNOWLEDGED)
+        .filter(DocumentLog.status == AckStatus.ACKNOWLEDGED, DocumentLog.document_id.in_(active_ids))
         .distinct()
         .count()
     )
@@ -141,7 +169,7 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     # Bar: distinct acknowledged users per department (from our records)
     pairs = (
         db.query(DocumentLog.department, DocumentLog.ad_username)
-        .filter(DocumentLog.status == AckStatus.ACKNOWLEDGED)
+        .filter(DocumentLog.status == AckStatus.ACKNOWLEDGED, DocumentLog.document_id.in_(active_ids))
         .distinct()
         .all()
     )
@@ -156,6 +184,7 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         .filter(
             DocumentLog.status == AckStatus.ACKNOWLEDGED,
             DocumentLog.acknowledged_at >= since_utc,
+            DocumentLog.document_id.in_(active_ids),
         )
         .all()
     )
@@ -186,6 +215,44 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
             "admin_user": admin_user,
         },
     )
+
+
+@router.get("/dashboard/stats.json")
+async def dashboard_stats_json(request: Request, db: Session = Depends(get_db)):
+    """Live counts for the dashboard table + KPI cards (polled by index.html)."""
+    _require_admin(request)
+    docs = list_documents(db)
+    doc_rows = []
+    for doc in docs:
+        ack = (
+            db.query(DocumentLog.ad_username)
+            .filter(DocumentLog.document_id == doc.id, DocumentLog.status == AckStatus.ACKNOWLEDGED)
+            .distinct().count()
+        )
+        total = (
+            db.query(DocumentLog.ad_username)
+            .filter(DocumentLog.document_id == doc.id)
+            .distinct().count()
+        )
+        doc_rows.append({"id": doc.id, "ack_count": ack, "total_count": total})
+
+    active_ids = db.query(Document.id).filter(Document.archived == False)
+    system_users = (
+        db.query(DocumentLog.ad_username)
+        .filter(DocumentLog.document_id.in_(active_ids))
+        .distinct().count()
+    )
+    ack_users = (
+        db.query(DocumentLog.ad_username)
+        .filter(DocumentLog.status == AckStatus.ACKNOWLEDGED, DocumentLog.document_id.in_(active_ids))
+        .distinct().count()
+    )
+    total_ad_users = ldap_client.get_directory_stats()["total_users"]
+    coverage = round(system_users / total_ad_users * 100) if total_ad_users else 0
+    return {
+        "docs": doc_rows,
+        "stats": {"system_users": system_users, "ack_users": ack_users, "coverage": coverage},
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -466,11 +533,15 @@ async def admin_serve_file(doc_id: int, request: Request, db: Session = Depends(
     file_path = document_service.get_file_path(doc)
     if not file_path.exists():
         raise HTTPException(404, "File not found on disk")
+    disposition = "inline" if doc.mime_type == "application/pdf" else "attachment"
     return FileResponse(
         path=str(file_path),
         media_type=doc.mime_type,
         filename=doc.original_filename,
-        headers={"Content-Disposition": f'inline; filename="{doc.original_filename}"'},
+        headers={
+            "Content-Disposition": f'{disposition}; filename="{doc.original_filename}"',
+            "X-Content-Type-Options": "nosniff",
+        },
     )
 
 

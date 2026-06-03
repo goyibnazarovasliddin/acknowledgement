@@ -4,6 +4,10 @@ const TRANSLATIONS = {
     loading:               "Tasdiqlanmoqda...",
     restricted_title:      "Kirish cheklangan",
     restricted_msg:        "Tizim sizni aniqlay olmadi. Iltimos, korporativ tarmoq orqali kiring.",
+    archived_title:        "Hujjat arxivlangan",
+    archived_msg:          "Ushbu hujjat arxivlangan va endi mavjud emas. Savollar bo'lsa administrator bilan bog'laning.",
+    notfound_title:        "Hujjat topilmadi",
+    notfound_msg:          "Bunday hujjat mavjud emas yoki havola noto'g'ri. Savollar bo'lsa administrator bilan bog'laning.",
     confirm_title:         "Shaxsingizni tasdiqlang",
     confirm_subtitle:      "Quyidagi ma'lumotlar to'g'rimi?",
     field_name:            "Ism Familiya",
@@ -135,6 +139,9 @@ const TRANSLATIONS = {
     copy_link:             "Nusxa olish",
     copied:                "Nusxalandi!",
 
+    // Brand
+    brand_subtitle:        "Hujjatlar bilan tanishish tizimi",
+    doc_banner_label:      "Hujjat",
     // Login
     login_title:           "Admin Panel",
     login_sub:             "Agrobank ACK tizimi",
@@ -152,6 +159,10 @@ const TRANSLATIONS = {
     loading:               "Подтверждение...",
     restricted_title:      "Доступ ограничен",
     restricted_msg:        "Система не смогла вас идентифицировать. Пожалуйста, войдите через корпоративную сеть.",
+    archived_title:        "Документ архивирован",
+    archived_msg:          "Этот документ архивирован и больше недоступен. По вопросам обратитесь к администратору.",
+    notfound_title:        "Документ не найден",
+    notfound_msg:          "Такого документа не существует или ссылка неверна. По вопросам обратитесь к администратору.",
     confirm_title:         "Подтвердите личность",
     confirm_subtitle:      "Следующие данные верны?",
     field_name:            "Имя и фамилия",
@@ -283,6 +294,9 @@ const TRANSLATIONS = {
     copy_link:             "Скопировать",
     copied:                "Скопировано!",
 
+    // Brand
+    brand_subtitle:        "Система ознакомления с документами",
+    doc_banner_label:      "Документ",
     // Login
     login_title:           "Панель администратора",
     login_sub:             "Система Agrobank ACK",

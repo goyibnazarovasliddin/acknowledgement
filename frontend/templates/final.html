@@ -8,7 +8,10 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;">
       <div style="display:flex;align-items:center;gap:.6rem;">
         <img src="/static/img/agrobank-logo.webp" alt="Agrobank" style="width:30px;height:30px;object-fit:contain;border-radius:.4rem;background:#fff;padding:2px;" />
-        <span style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green-700);">Agrobank</span>
+        <div style="text-align:left;line-height:1.1;">
+          <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green-700);">Agrobank</div>
+          <div style="font-size:.7rem;color:var(--gray-600);" class="brand-sub" data-i18n="brand_subtitle">Hujjatlar bilan tanishish tizimi</div>
+        </div>
       </div>
     </div>
 
@@ -28,7 +31,7 @@
 
     <div style="background:var(--green-50);border:1px solid var(--green-100);border-radius:.625rem;padding:1rem;text-align:left;">
       <div style="font-size:.72rem;color:var(--green-700);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;" data-i18n="final_info">Ma'lumot</div>
-      <div style="font-size:.875rem;font-weight:600;margin-bottom:.2rem;">{{ doc.title }}</div>
+      <div style="font-size:1.15rem;font-weight:800;color:var(--green-800);line-height:1.2;margin-bottom:.3rem;word-break:break-word;">{{ doc.title }}</div>
       {% if user %}
       <div style="font-size:.82rem;color:var(--gray-600);">
         {{ user.full_name }}{% if user.department %} · {{ user.department }}{% endif %}

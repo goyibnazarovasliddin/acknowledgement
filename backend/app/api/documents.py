@@ -10,6 +10,7 @@ GET  /d/{token}/file        — serve raw file (requires doc session)
 POST /d/{token}/acknowledge — finalize attempt → ACKNOWLEDGED
 """
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -24,7 +25,7 @@ from app.auth.ldap_client import ldap_client
 from app.auth.session import create_doc_session, get_doc_session, clear_doc_session
 from app.config import settings
 from app.database import get_db
-from app.models import Document
+from app.models import AckStatus, Document
 from app.services import document_service, log_service
 
 logger = logging.getLogger(__name__)
@@ -52,10 +53,36 @@ def _get_doc_or_404(db: Session, token: str) -> Document:
     return doc
 
 
+def _archived_page(request: Request, doc: Document) -> HTMLResponse:
+    """Friendly 'document archived' page. No session, no attempt, nothing logged."""
+    return templates.TemplateResponse(
+        "archived.html",
+        {"request": request, "doc": doc, "admin_email": settings.ADMIN_EMAIL},
+        status_code=410,  # Gone
+        # 410 is cacheable by default — force no-store so the link works
+        # again immediately after the document is restored from the archive.
+        headers={"Cache-Control": "no-store, must-revalidate"},
+    )
+
+
+def _notfound_page(request: Request) -> HTMLResponse:
+    """Friendly 'document not found' page (deleted or invalid token)."""
+    return templates.TemplateResponse(
+        "notfound.html",
+        {"request": request, "admin_email": settings.ADMIN_EMAIL},
+        status_code=404,
+        headers={"Cache-Control": "no-store, must-revalidate"},
+    )
+
+
 def _client_ip(request: Request) -> str:
-    forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
+    # Use X-Real-IP, which the nginx reverse proxy sets to the true client
+    # ($remote_addr). X-Forwarded-For is NOT used: its left-most entry is
+    # client-supplied and trivially spoofable, which would poison the audit
+    # log (the acknowledgement IP is a legal record).
+    real = request.headers.get("X-Real-IP")
+    if real:
+        return real.strip()
     return request.client.host if request.client else ""
 
 
@@ -64,7 +91,11 @@ def _client_ip(request: Request) -> str:
 # ---------------------------------------------------------------------------
 @router.get("/d/{token}", response_class=HTMLResponse)
 async def open_document(token: str, request: Request, db: Session = Depends(get_db)):
-    doc = _get_doc_or_404(db, token)
+    doc = document_service.get_by_token(db, token)
+    if not doc:
+        return _notfound_page(request)   # deleted or invalid link
+    if doc.archived:
+        return _archived_page(request, doc)
     user = get_doc_session(request, token)
 
     if not user:
@@ -101,6 +132,8 @@ async def login(
     db: Session = Depends(get_db),
 ):
     doc = _get_doc_or_404(db, token)
+    if doc.archived:
+        return _archived_page(request, doc)
 
     cookie_key = f"{_LOGIN_COOKIE}_{token}"
     try:
@@ -152,6 +185,8 @@ async def login(
 @router.post("/d/{token}/confirm", response_class=HTMLResponse)
 async def confirm_identity(token: str, request: Request, db: Session = Depends(get_db)):
     doc = _get_doc_or_404(db, token)
+    if doc.archived:
+        return _archived_page(request, doc)  # no attempt created → nothing logged
     user = get_doc_session(request, token)
     if not user:
         return RedirectResponse(f"/d/{token}", status_code=302)
@@ -182,6 +217,8 @@ async def confirm_identity(token: str, request: Request, db: Session = Depends(g
 @router.post("/d/{token}/decline", response_class=HTMLResponse)
 async def decline_identity(token: str, request: Request, db: Session = Depends(get_db)):
     doc = _get_doc_or_404(db, token)
+    if doc.archived:
+        return _archived_page(request, doc)
     user = get_doc_session(request, token)
     if not user:
         return RedirectResponse(f"/d/{token}", status_code=302)
@@ -220,6 +257,8 @@ async def decline_identity(token: str, request: Request, db: Session = Depends(g
 @router.get("/d/{token}/file")
 async def serve_file(token: str, request: Request, db: Session = Depends(get_db)):
     doc = _get_doc_or_404(db, token)
+    if doc.archived:
+        raise HTTPException(410, "Document archived")
     user = get_doc_session(request, token)
     if not user:
         raise HTTPException(403, "Authentication required")
@@ -228,11 +267,17 @@ async def serve_file(token: str, request: Request, db: Session = Depends(get_db)
     if not file_path.exists():
         raise HTTPException(404, "File not found on server")
 
+    # Only PDFs are shown inline (the viewer needs it). Anything else is forced
+    # to download so a malicious doc can't execute in the app origin.
+    disposition = "inline" if doc.mime_type == "application/pdf" else "attachment"
     return FileResponse(
         path=str(file_path),
         media_type=doc.mime_type,
         filename=doc.original_filename,
-        headers={"Content-Disposition": f'inline; filename="{doc.original_filename}"'},
+        headers={
+            "Content-Disposition": f'{disposition}; filename="{doc.original_filename}"',
+            "X-Content-Type-Options": "nosniff",
+        },
     )
 
 
@@ -247,6 +292,8 @@ async def acknowledge(
     db: Session = Depends(get_db),
 ):
     doc = _get_doc_or_404(db, token)
+    if doc.archived:
+        return _archived_page(request, doc)  # no log update for archived docs
     user = get_doc_session(request, token)
     if not user:
         raise HTTPException(403, "Authentication required")
@@ -257,6 +304,20 @@ async def acknowledge(
         if not latest:
             raise HTTPException(400, "Attempt not found")
         attempt_id = latest.id
+
+    # Server-side minimum-view enforcement: the client timer/scroll gate can be
+    # bypassed by POSTing here directly, so re-check elapsed time against the
+    # attempt's server-recorded opened_at. Scroll cannot be verified server-side.
+    attempt = log_service.get_attempt(db, attempt_id)
+    if not attempt or attempt.ad_username != user["username"]:
+        raise HTTPException(400, "Attempt not found")
+    if attempt.status != AckStatus.ACKNOWLEDGED:
+        elapsed = (datetime.utcnow() - attempt.opened_at).total_seconds()
+        if elapsed < settings.MIN_VIEW_SECONDS:
+            raise HTTPException(
+                425,
+                f"Hujjat hali to'liq o'qilmadi (kamida {settings.MIN_VIEW_SECONDS} soniya kerak)",
+            )
 
     log = log_service.acknowledge_attempt(db, attempt_id, user["username"])
     if not log:

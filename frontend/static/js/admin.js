@@ -1,7 +1,17 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Remove a table row; if it was the last one, reload so the server-rendered
+  // empty state appears immediately (no manual refresh).
+  function removeRowOrReload(btn) {
+    const tr = btn.closest("tr");
+    const tbody = tr ? tr.parentElement : null;
+    if (tr) tr.remove();
+    if (tbody && tbody.querySelectorAll("tr").length === 0) location.reload();
+  }
+
   // Copy share link
   document.querySelectorAll(".btn-copy-link").forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
       const url = btn.dataset.url;
       navigator.clipboard.writeText(url).then(() => {
         const orig = btn.textContent;
@@ -13,7 +23,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Archive document (soft) — Hujjatlar list
   document.querySelectorAll(".btn-archive-doc").forEach((btn) => {
-    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
       const title = btn.dataset.docTitle || "";
       const ok = await window.customConfirm({
         title: I18n.t("archive_title"),
@@ -24,14 +35,15 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       if (!ok) return;
       const res = await fetch(`/admin/documents/${btn.dataset.docId}/archive`, { method: "POST" });
-      if (res.ok) btn.closest("tr").remove();
+      if (res.ok) removeRowOrReload(btn);
       else await window.customAlert({ message: I18n.t("action_failed") });
     });
   });
 
   // Restore archived document — Arxiv list
   document.querySelectorAll(".btn-restore-doc").forEach((btn) => {
-    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
       const title = btn.dataset.docTitle || "";
       const ok = await window.customConfirm({
         title: I18n.t("restore_title"),
@@ -42,14 +54,15 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       if (!ok) return;
       const res = await fetch(`/admin/documents/${btn.dataset.docId}/unarchive`, { method: "POST" });
-      if (res.ok) btn.closest("tr").remove();
+      if (res.ok) removeRowOrReload(btn);
       else await window.customAlert({ message: I18n.t("action_failed") });
     });
   });
 
   // Permanently delete (from Arxiv) with custom confirmation dialog
   document.querySelectorAll(".btn-delete-doc").forEach((btn) => {
-    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
       const title = btn.dataset.docTitle || "";
       const ok = await window.customConfirm({
         title: I18n.t("delete_title"),
@@ -62,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const docId = btn.dataset.docId;
       const res = await fetch(`/admin/documents/${docId}`, { method: "DELETE" });
       if (res.ok) {
-        btn.closest("tr").remove();
+        removeRowOrReload(btn);
       } else {
         await window.customAlert({ title: I18n.t("delete_title"), message: I18n.t("delete_failed") });
       }
@@ -77,7 +90,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Full-row navigation (rows with data-href) — ignore clicks on links/buttons
   document.querySelectorAll("tr.row-link[data-href]").forEach((tr) => {
     tr.addEventListener("click", (e) => {
-      if (e.target.closest("a, button")) return;
+      // Don't navigate when the click landed on any interactive control.
+      if (e.target.closest("a, button, .btn, input, select, .select-wrap, svg")) return;
       window.location.href = tr.dataset.href;
     });
   });

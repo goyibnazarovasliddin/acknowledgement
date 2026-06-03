@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin — Agrobank ACK</title>
+  <link rel="icon" href="/static/img/agrobank-logo.webp" type="image/webp" />
+  <link rel="apple-touch-icon" href="/static/img/agrobank-logo.webp" />
   <link rel="stylesheet" href="/static/css/style.css" />
 </head>
 <body>
@@ -11,11 +13,11 @@
 
   <aside class="admin-sidebar">
     <div class="sidebar-brand">
-      <div class="sidebar-brand-logo">
-        <div class="sidebar-brand-icon" style="background:#fff;padding:3px;"><img src="/static/img/agrobank-logo.webp" alt="Agrobank" style="width:100%;height:100%;object-fit:contain;" /></div>
+      <div class="sidebar-brand-icon" style="background:#fff;padding:3px;"><img src="/static/img/agrobank-logo.webp" alt="Agrobank" style="width:100%;height:100%;object-fit:contain;" /></div>
+      <div class="sidebar-brand-text">
         <span class="sidebar-brand-name">Agrobank</span>
+        <div class="sidebar-brand-desc">Hujjatlar bilan tanishish tizimi</div>
       </div>
-      <div class="sidebar-brand-desc">ACK System</div>
     </div>
     <nav class="admin-nav">
       <div class="admin-nav-section" data-i18n="admin_management">Boshqaruv</div>
@@ -58,15 +60,15 @@
         </div>
         <div class="stat-card" style="border-left-color:var(--warning);">
           <span class="stat-card-label" data-i18n="admin_stats_system_users">Tizimdan foydalanganlar</span>
-          <span class="stat-card-value" style="color:var(--warning);">{{ stats.system_users }}</span>
+          <span class="stat-card-value" style="color:var(--warning);" id="kpi-system-users">{{ stats.system_users }}</span>
         </div>
         <div class="stat-card">
           <span class="stat-card-label" data-i18n="admin_stats_ack_employees">Tanishgan xodimlar</span>
-          <span class="stat-card-value" style="color:var(--green-600);">{{ stats.ack_users }}</span>
+          <span class="stat-card-value" style="color:var(--green-600);" id="kpi-ack-users">{{ stats.ack_users }}</span>
         </div>
         <div class="stat-card" style="border-left-color:#0891b2;">
           <span class="stat-card-label" data-i18n="admin_stats_coverage">Qamrov foizi</span>
-          <span class="stat-card-value" style="color:#0891b2;">{{ stats.coverage }}%</span>
+          <span class="stat-card-value" style="color:#0891b2;"><span id="kpi-coverage">{{ stats.coverage }}</span>%</span>
         </div>
       </div>
 
@@ -118,7 +120,7 @@
                 <td style="font-size:.8rem;color:var(--gray-600);">{{ item.doc.original_filename }}</td>
                 <td style="font-size:.82rem;white-space:nowrap;color:var(--gray-600);">{{ item.doc.uploaded_at | localdt }}</td>
                 <td>
-                  <span class="badge {% if item.ack_count > 0 %}badge-green{% else %}badge-gray{% endif %}">
+                  <span class="badge {% if item.ack_count > 0 %}badge-green{% else %}badge-gray{% endif %}" data-ack-badge="{{ item.doc.id }}">
                     {{ item.ack_count }} / {{ item.total_count }}
                   </span>
                 </td>
@@ -159,10 +161,49 @@
 <script src="/static/js/i18n.js"></script>
 <script src="/static/js/dialog.js?v=2"></script>
 <script src="/static/js/admin.js?v=2"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/static/vendor/chart.umd.min.js"></script>
 <script>
   window.CHART_DATA = {{ charts | tojson }};
 </script>
 <script src="/static/js/charts.js"></script>
+<script>
+  // Live-refresh the document table badges + KPI cards (no full reload).
+  (function () {
+    const STATS = "/admin/dashboard/stats.json";
+    let knownIds = null;  // first payload's doc-id set — reload if it changes
+
+    function applyBadge(span, ack, total) {
+      span.textContent = ack + " / " + total;
+      span.classList.toggle("badge-green", ack > 0);
+      span.classList.toggle("badge-gray", ack === 0);
+    }
+
+    async function poll() {
+      try {
+        const res = await fetch(STATS, { credentials: "same-origin" });
+        if (!res.ok) return;            // 302 → session gone; leave page as is
+        const data = await res.json();
+
+        const ids = data.docs.map(d => d.id).sort().join(",");
+        if (knownIds === null) knownIds = ids;
+        else if (ids !== knownIds) { location.reload(); return; }  // doc added/removed
+
+        for (const d of data.docs) {
+          const span = document.querySelector(`[data-ack-badge="${d.id}"]`);
+          if (span) applyBadge(span, d.ack_count, d.total_count);
+        }
+        const sys = document.getElementById("kpi-system-users");
+        const ack = document.getElementById("kpi-ack-users");
+        const cov = document.getElementById("kpi-coverage");
+        if (sys) sys.textContent = data.stats.system_users;
+        if (ack) ack.textContent = data.stats.ack_users;
+        if (cov) cov.textContent = data.stats.coverage;
+      } catch (e) { /* keep last view */ }
+    }
+
+    poll();
+    setInterval(poll, 5000);
+  })();
+</script>
 </body>
 </html>

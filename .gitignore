@@ -39,3 +39,7 @@ Thumbs.db
 # Logs
 *.log
 
+
+# runtime session-revocation marker
+backend/.session_epoch
+.session_epoch

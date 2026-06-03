@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Hujjat topilmadi — Agrobank{% endblock %}
+{% block body %}
+<div class="center-page">
+  <div class="card" style="max-width:420px;text-align:center;">
+
+    <!-- Header row with lang toggle -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <div style="display:flex;align-items:center;gap:.5rem;">
+        <img src="/static/img/agrobank-logo.webp" alt="Agrobank" style="width:30px;height:30px;object-fit:contain;border-radius:.4rem;background:#fff;padding:2px;" />
+        <div style="text-align:left;line-height:1.1;">
+          <div style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green-700);">Agrobank</div>
+          <div style="font-size:.7rem;color:var(--gray-600);" class="brand-sub" data-i18n="brand_subtitle">Hujjatlar bilan tanishish tizimi</div>
+        </div>
+      </div>
+      <button class="lang-toggle lang-toggle-light">RU</button>
+    </div>
+
+    <div class="icon-circle icon-circle-gray">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+    </div>
+    <h2 style="font-size:1.2rem;font-weight:800;margin-bottom:.6rem;" data-i18n="notfound_title">Hujjat topilmadi</h2>
+    <p style="color:var(--gray-600);font-size:.9rem;line-height:1.6;" data-i18n="notfound_msg">
+      Bunday hujjat mavjud emas yoki havola noto'g'ri. Savollar bo'lsa administrator bilan bog'laning.
+    </p>
+    {% if admin_email %}
+    <a href="mailto:{{ admin_email }}" style="display:inline-flex;align-items:center;gap:.45rem;margin-top:1rem;color:var(--green-800);text-decoration:none;font-weight:600;font-size:.9rem;">
+      <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
+      {{ admin_email }}
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
